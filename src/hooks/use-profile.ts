@@ -10,6 +10,7 @@ export interface Profile {
   language: string;
   initial_balance: number;
   monthly_budget: number;
+  budget_currency: string;
   savings_goal: number;
   theme: "light" | "dark" | "system";
   created_at: string;

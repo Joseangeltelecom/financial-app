@@ -299,9 +299,11 @@
     "budget": {
       "title": "Configuración de Presupuesto",
       "description": "Configura tus límites de presupuesto y metas",
+      "budgetCurrency": "Moneda del Presupuesto",
+      "budgetCurrencyDesc": "La moneda usada para tu presupuesto mensual y metas",
       "monthlyBudget": "Presupuesto Mensual",
       "monthlyBudgetDesc": "Tu límite total de gasto por mes",
-    "initialBalance": "Balance Inicial",
+      "initialBalance": "Balance Inicial",
       "initialBalanceDesc": "Balance inicial para rastreo",
       "savingsGoal": "Meta de Ahorro",
       "savingsGoalDesc": "Monto objetivo para ahorrar cada mes",

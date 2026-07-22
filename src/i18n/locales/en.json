@@ -299,9 +299,11 @@
     "budget": {
       "title": "Budget Settings",
       "description": "Configure your budget limits and goals",
+      "budgetCurrency": "Budget Currency",
+      "budgetCurrencyDesc": "The currency used for your monthly budget and goals",
       "monthlyBudget": "Monthly Budget",
       "monthlyBudgetDesc": "Your total spending limit per month",
-    "initialBalance": "Initial Balance",
+      "initialBalance": "Initial Balance",
       "initialBalanceDesc": "Starting balance for tracking",
       "savingsGoal": "Savings Goal",
       "savingsGoalDesc": "Target amount to save each month",

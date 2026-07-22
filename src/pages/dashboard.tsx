@@ -232,7 +232,7 @@ export default function DashboardPage() {
 
   const monthlyIncome = useMemo(() => monthTx.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.accounts?.currency), 0), [monthTx, baseCurrency, exchangeRates]);
   const monthlyExpenses = useMemo(() => monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.accounts?.currency), 0), [monthTx, baseCurrency, exchangeRates]);
-  const budget = profile?.monthly_budget ?? 0;
+  const budget = toBase(profile?.monthly_budget ?? 0, profile?.budget_currency ?? "USD");
   const remaining = Math.max(budget - monthlyExpenses, 0);
   const remainingPct = budget > 0 ? getPercentage(remaining, budget) : 0;
 

@@ -36,6 +36,7 @@ const budgetSchema = z.object({
   monthly_budget: z.number().min(0),
   initial_balance: z.number(),
   savings_goal: z.number().min(0),
+  budget_currency: z.string().min(1),
 });
 type BudgetForm = z.infer<typeof budgetSchema>;
 
@@ -90,8 +91,12 @@ export default function SettingsPage() {
       monthly_budget: profile?.monthly_budget ?? 0,
       initial_balance: profile?.initial_balance ?? 0,
       savings_goal: profile?.savings_goal ?? 0,
+      budget_currency: profile?.budget_currency ?? "USD",
     },
   });
+
+  const budgetCurrency = budgetForm.watch("budget_currency");
+  const budgetCurrencySymbol = CURRENCIES.find((c) => c.code === budgetCurrency)?.symbol || "$";
 
   if (profileLoading || notifLoading) return <div className="p-6"><SkeletonSettings /></div>;
 
@@ -206,10 +211,20 @@ export default function SettingsPage() {
             <CardDescription>{t("settings.budget.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("settings.budget.budgetCurrency")}</Label>
+              <Select value={budgetCurrency} onValueChange={(v) => budgetForm.setValue("budget_currency", v)}>
+                <SelectTrigger className="bg-background"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {CURRENCIES.map((c) => <SelectItem key={c.code} value={c.code}>{c.symbol} {c.name} ({c.code})</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground">{t("settings.budget.budgetCurrencyDesc")}</p>
+            </div>
             <div className="space-y-1">
               <Label>{t("settings.budget.monthlyBudget")}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{budgetCurrencySymbol}</span>
                 <Input type="number" className="pl-7" {...budgetForm.register("monthly_budget", { valueAsNumber: true })} />
               </div>
               <p className="text-xs text-muted-foreground">{t("settings.budget.monthlyBudgetDesc")}</p>
@@ -217,7 +232,7 @@ export default function SettingsPage() {
             <div className="space-y-1">
               <Label>{t("settings.budget.initialBalance")}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{budgetCurrencySymbol}</span>
                 <Input type="number" className="pl-7" {...budgetForm.register("initial_balance", { valueAsNumber: true })} />
               </div>
               <p className="text-xs text-muted-foreground">{t("settings.budget.initialBalanceDesc")}</p>
@@ -225,7 +240,7 @@ export default function SettingsPage() {
             <div className="space-y-1">
               <Label>{t("settings.budget.savingsGoal")}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">{budgetCurrencySymbol}</span>
                 <Input type="number" className="pl-7" {...budgetForm.register("savings_goal", { valueAsNumber: true })} />
               </div>
               <p className="text-xs text-muted-foreground">{t("settings.budget.savingsGoalDesc")}</p>
@@ -237,6 +252,7 @@ export default function SettingsPage() {
                     monthly_budget: data.monthly_budget,
                     initial_balance: data.initial_balance,
                     savings_goal: data.savings_goal,
+                    budget_currency: data.budget_currency,
                   },
                   {
                     onSuccess: () => toast.success(t("settings.saved")),
