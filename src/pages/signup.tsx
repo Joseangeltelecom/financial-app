@@ -78,7 +78,7 @@ export default function SignupPage() {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const { signUp, loading: isLoading } = useAuth();
+  const { signUp, signInWithGoogle, loading: isLoading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
@@ -155,7 +155,7 @@ export default function SignupPage() {
               </motion.div>
             )}
 
-            <Button variant="outline" className="w-full" disabled={isLoading}>
+            <Button variant="outline" className="w-full" disabled={isLoading} onClick={() => signInWithGoogle()}>
               <GoogleIcon />
               <span className="ml-2">{t("auth.signup.signUpGoogle")}</span>
             </Button>

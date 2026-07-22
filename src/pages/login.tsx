@@ -51,7 +51,7 @@ const GoogleIcon = () => (
 export default function LoginPage() {
   const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn, loading } = useAuth();
+  const { signIn, signInWithGoogle, loading } = useAuth();
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
 
@@ -119,6 +119,7 @@ export default function LoginPage() {
               variant="outline"
               className="w-full"
               disabled={loading}
+              onClick={() => signInWithGoogle()}
             >
               <GoogleIcon />
               <span className="ml-2">{t("auth.login.signInGoogle")}</span>
