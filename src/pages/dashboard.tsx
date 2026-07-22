@@ -48,7 +48,7 @@ function StatCard({ icon: Icon, label, value, color, change, delay }: {
   );
 }
 
-function EditableValue({ value, onSave, label }: { value: number; onSave: (v: number) => void; label: string }) {
+function EditableValue({ value, onSave, label, currency }: { value: number; onSave: (v: number) => void; label: string; currency?: string }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(String(value));
 
@@ -79,7 +79,7 @@ function EditableValue({ value, onSave, label }: { value: number; onSave: (v: nu
       className="text-2xl font-bold tracking-tight mt-0.5 cursor-pointer hover:text-primary transition-colors"
       title={`Click to edit ${label.toLowerCase()}`}
     >
-      {formatCurrency(value)}
+      {formatCurrency(value, currency)}
     </p>
   );
 }
@@ -329,7 +329,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3">
                 <p className="text-xs font-medium text-muted-foreground">{t("dashboard.monthlyBudget")}</p>
-                <EditableValue value={budget} onSave={(v) => updateProfile.mutate({ monthly_budget: v })} label={t("dashboard.monthlyBudget")} />
+                <EditableValue value={budget} onSave={(v) => updateProfile.mutate({ monthly_budget: v })} label={t("dashboard.monthlyBudget")} currency={baseCurrency} />
               </div>
             </CardContent>
           </Card>
@@ -342,7 +342,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3">
                 <p className="text-xs font-medium text-muted-foreground">{t("dashboard.savingsGoal")}</p>
-                <EditableValue value={profile?.savings_goal ?? 0} onSave={(v) => updateProfile.mutate({ savings_goal: v })} label={t("dashboard.savingsGoal")} />
+                <EditableValue value={profile?.savings_goal ?? 0} onSave={(v) => updateProfile.mutate({ savings_goal: v })} label={t("dashboard.savingsGoal")} currency={baseCurrency} />
               </div>
             </CardContent>
           </Card>
