@@ -232,7 +232,9 @@ export default function DashboardPage() {
 
   const monthlyIncome = useMemo(() => monthTx.filter((t) => t.type === "income").reduce((s, t) => s + toBase(t.amount, t.accounts?.currency), 0), [monthTx, baseCurrency, exchangeRates]);
   const monthlyExpenses = useMemo(() => monthTx.filter((t) => t.type === "expense").reduce((s, t) => s + toBase(t.amount, t.accounts?.currency), 0), [monthTx, baseCurrency, exchangeRates]);
-  const budget = toBase(profile?.monthly_budget ?? 0, profile?.budget_currency ?? "USD");
+  const budgetDisplay = profile?.monthly_budget ?? 0;
+  const budgetCurrencyCode = profile?.budget_currency ?? "USD";
+  const budget = toBase(budgetDisplay, budgetCurrencyCode);
   const remaining = Math.max(budget - monthlyExpenses, 0);
   const remainingPct = budget > 0 ? getPercentage(remaining, budget) : 0;
 
@@ -329,7 +331,7 @@ export default function DashboardPage() {
               </div>
               <div className="mt-3">
                 <p className="text-xs font-medium text-muted-foreground">{t("dashboard.monthlyBudget")}</p>
-                <EditableValue value={budget} onSave={(v) => updateProfile.mutate({ monthly_budget: v })} label={t("dashboard.monthlyBudget")} currency={baseCurrency} />
+                <EditableValue value={budgetDisplay} onSave={(v) => updateProfile.mutate({ monthly_budget: v })} label={t("dashboard.monthlyBudget")} currency={budgetCurrencyCode} />
               </div>
             </CardContent>
           </Card>
