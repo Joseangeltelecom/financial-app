@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
+import { DEFAULT_CATEGORIES } from "@/config/constants";
 
 interface Category {
   id: string;
@@ -25,8 +26,29 @@ async function getCategories(type?: "income" | "expense") {
     query = query.eq("type", type);
   }
 
-  const { data, error } = await query;
+  let { data, error } = await query;
   if (error) throw error;
+
+  if (!data || data.length === 0) {
+    const defaults = DEFAULT_CATEGORIES.map((c) => ({
+      ...c,
+      user_id: user.id,
+      is_default: true,
+    }));
+    const { data: inserted, error: insertError } = await supabase
+      .from("categories")
+      .insert(defaults)
+      .select("*")
+      .order("name", { ascending: true });
+
+    if (insertError) throw insertError;
+    data = inserted;
+
+    if (type) {
+      data = data.filter((c) => c.type === type);
+    }
+  }
+
   return data as Category[];
 }
 

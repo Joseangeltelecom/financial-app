@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Mail, Loader2, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -14,6 +15,7 @@ import {
 const COOLDOWN_SECONDS = 60;
 
 export default function EmailVerificationPage() {
+  const { t } = useTranslation();
   const [cooldown, setCooldown] = useState(0);
   const [isResending, setIsResending] = useState(false);
 
@@ -59,10 +61,10 @@ export default function EmailVerificationPage() {
         <Card className="border-gray-200 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-semibold">
-              Verify your email
+              {t("auth.emailVerification.title")}
             </CardTitle>
             <CardDescription>
-              We've sent a verification link to your email
+              {t("auth.emailVerification.subtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -82,10 +84,9 @@ export default function EmailVerificationPage() {
               </motion.div>
 
               <div className="space-y-1">
-                <p className="font-medium text-gray-900">Check your inbox</p>
+                <p className="font-medium text-gray-900">{t("auth.emailVerification.checkInbox")}</p>
                 <p className="text-sm text-gray-500">
-                  Click the verification link in the email we sent to confirm
-                  your account. The link will expire in 24 hours.
+                  {t("auth.emailVerification.checkInboxDesc")}
                 </p>
               </div>
             </div>
@@ -105,15 +106,15 @@ export default function EmailVerificationPage() {
                   <Mail className="mr-2 h-4 w-4" />
                 )}
                 {cooldown > 0
-                  ? `Resend in ${cooldown}s`
+                  ? t("auth.emailVerification.resendIn", { seconds: cooldown })
                   : isResending
-                    ? "Sending..."
-                    : "Resend verification email"}
+                    ? t("auth.emailVerification.sending")
+                    : t("auth.emailVerification.resendVerification")}
               </Button>
 
               <Link to="/login">
                 <Button variant="ghost" className="w-full">
-                  Back to sign in
+                  {t("auth.emailVerification.backToSignIn")}
                 </Button>
               </Link>
             </div>

@@ -59,6 +59,7 @@ export interface Database {
           name: string;
           type: string;
           balance: number;
+          currency: string;
           color: string;
           icon: string;
           is_active: boolean;
@@ -71,6 +72,7 @@ export interface Database {
           name: string;
           type: string;
           balance?: number;
+          currency?: string;
           color?: string;
           icon?: string;
           is_active?: boolean;
@@ -81,9 +83,57 @@ export interface Database {
           name?: string;
           type?: string;
           balance?: number;
+          currency?: string;
           color?: string;
           icon?: string;
           is_active?: boolean;
+          updated_at?: string;
+        };
+      };
+      transfers: {
+        Row: {
+          id: string;
+          user_id: string;
+          from_account_id: string | null;
+          to_account_id: string | null;
+          from_amount: number;
+          to_amount: number;
+          exchange_rate: number | null;
+          from_currency: string;
+          to_currency: string;
+          notes: string | null;
+          date: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          from_account_id?: string | null;
+          to_account_id?: string | null;
+          from_amount: number;
+          to_amount: number;
+          exchange_rate?: number | null;
+          from_currency: string;
+          to_currency: string;
+          notes?: string | null;
+          date: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          from_account_id?: string | null;
+          to_account_id?: string | null;
+          from_amount?: number;
+          to_amount?: number;
+          exchange_rate?: number | null;
+          from_currency?: string;
+          to_currency?: string;
+          notes?: string | null;
+          date?: string;
+          created_at?: string;
           updated_at?: string;
         };
       };
@@ -92,7 +142,7 @@ export interface Database {
           id: string;
           user_id: string;
           account_id: string | null;
-          type: "income" | "expense" | "transfer";
+          type: "income" | "expense";
           name: string;
           amount: number;
           category_id: string | null;
@@ -106,7 +156,7 @@ export interface Database {
           id?: string;
           user_id: string;
           account_id?: string | null;
-          type: "income" | "expense" | "transfer";
+          type: "income" | "expense";
           name: string;
           amount: number;
           category_id?: string | null;
@@ -118,7 +168,7 @@ export interface Database {
         };
         Update: {
           account_id?: string | null;
-          type?: "income" | "expense" | "transfer";
+          type?: "income" | "expense";
           name?: string;
           amount?: number;
           category_id?: string | null;
@@ -199,6 +249,7 @@ export interface Database {
           name: string;
           target_amount: number;
           current_amount: number;
+          currency: string;
           deadline: string | null;
           color: string;
           icon: string;
@@ -212,6 +263,7 @@ export interface Database {
           name: string;
           target_amount: number;
           current_amount?: number;
+          currency?: string;
           deadline?: string | null;
           color?: string;
           icon?: string;
@@ -223,10 +275,46 @@ export interface Database {
           name?: string;
           target_amount?: number;
           current_amount?: number;
+          currency?: string;
           deadline?: string | null;
           color?: string;
           icon?: string;
           is_active?: boolean;
+          updated_at?: string;
+        };
+      };
+      savings_transactions: {
+        Row: {
+          id: string;
+          user_id: string;
+          saving_goal_id: string;
+          account_id: string | null;
+          type: "deposit" | "withdrawal";
+          amount: number;
+          description: string | null;
+          date: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          saving_goal_id: string;
+          account_id?: string | null;
+          type: "deposit" | "withdrawal";
+          amount: number;
+          description?: string | null;
+          date?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          saving_goal_id?: string;
+          account_id?: string | null;
+          type?: "deposit" | "withdrawal";
+          amount?: number;
+          description?: string | null;
+          date?: string;
           updated_at?: string;
         };
       };

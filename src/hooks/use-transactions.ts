@@ -5,11 +5,12 @@ export interface Transaction {
   id: string;
   user_id: string;
   account_id: string | null;
-  type: "income" | "expense" | "transfer";
+  type: "income" | "expense";
   name: string;
   amount: number;
   category_id: string | null;
   store: string | null;
+  accounts?: { currency: string; name: string; icon: string; color: string } | null;
   date: string;
   notes: string | null;
   created_at: string;
@@ -19,8 +20,9 @@ export interface Transaction {
 interface TransactionFilters {
   startDate?: string;
   endDate?: string;
-  type?: "income" | "expense" | "transfer";
+  type?: "income" | "expense";
   categoryId?: string;
+  accountId?: string;
 }
 
 async function getTransactions(filters?: TransactionFilters) {
@@ -29,7 +31,7 @@ async function getTransactions(filters?: TransactionFilters) {
 
   let query = supabase
     .from("transactions")
-    .select("*")
+    .select("*, accounts!inner(currency, name, icon, color)")
     .eq("user_id", user.id)
     .order("date", { ascending: false });
 
@@ -44,6 +46,9 @@ async function getTransactions(filters?: TransactionFilters) {
   }
   if (filters?.categoryId) {
     query = query.eq("category_id", filters.categoryId);
+  }
+  if (filters?.accountId) {
+    query = query.eq("account_id", filters.accountId);
   }
 
   const { data, error } = await query;
@@ -77,6 +82,7 @@ export function useCreateTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
   });
 }
@@ -99,6 +105,7 @@ export function useUpdateTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
   });
 }
@@ -117,6 +124,7 @@ export function useDeleteTransaction() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["transactions"] });
+      queryClient.invalidateQueries({ queryKey: ["accounts"] });
     },
   });
 }

@@ -15,6 +15,7 @@ import { useTransactions } from "@/hooks/use-transactions";
 import { cn, formatCurrency, getPercentage } from "@/lib/utils";
 import { CHART_COLORS } from "@/config/constants";
 import { format, subMonths, startOfMonth, endOfMonth, isWithinInterval } from "date-fns";
+import { useTranslation } from "react-i18next";
 
 type Range = "1m" | "3m" | "6m";
 const RANGES = [{ key: "1m" as const, label: "This Month", n: 1 }, { key: "3m" as const, label: "Last 3 Months", n: 3 }, { key: "6m" as const, label: "Last 6 Months", n: 6 }];
@@ -104,10 +105,11 @@ function LoadingSkeleton() {
 }
 
 function ScoreCircle({ score }: { score: number }) {
+  const { t } = useTranslation();
   const animated = useCountUp(score);
   const r = 85, circ = 2 * Math.PI * r, offset = circ * (1 - score / 100);
   const color = score > 80 ? "#22c55e" : score >= 60 ? "#3b82f6" : score >= 40 ? "#eab308" : "#ef4444";
-  const label = score > 80 ? "Excellent" : score >= 60 ? "Good" : score >= 40 ? "Fair" : "Needs Attention";
+  const label = score > 80 ? t("aiReport.scoreLabels.excellent") : score >= 60 ? t("aiReport.scoreLabels.good") : score >= 40 ? t("aiReport.scoreLabels.fair") : t("aiReport.scoreLabels.needsAttention");
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative w-[200px] h-[200px]">
@@ -118,7 +120,7 @@ function ScoreCircle({ score }: { score: number }) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="text-5xl font-bold tracking-tight" style={{ color }}>{animated}</span>
-          <span className="text-sm text-muted-foreground mt-1">out of 100</span>
+          <span className="text-sm text-muted-foreground mt-1">{t("aiReport.outOf100")}</span>
         </div>
       </div>
       <Badge variant="outline" className={cn("text-sm font-medium px-3 py-1",
@@ -131,6 +133,7 @@ function ScoreCircle({ score }: { score: number }) {
 }
 
 export default function AIReportPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const { data: transactions = [], isLoading: txLoading } = useTransactions();
@@ -149,8 +152,8 @@ export default function AIReportPage() {
       <Skeleton className="h-10 w-72" />
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <RefreshCw className="w-8 h-8 animate-spin text-primary" />
-        <p className="text-lg text-muted-foreground font-medium">Analyzing your finances...</p>
-        <p className="text-sm text-muted-foreground">This won't take long</p>
+        <p className="text-lg text-muted-foreground font-medium">{t("aiReport.analyzing")}</p>
+        <p className="text-sm text-muted-foreground">{t("aiReport.analyzingDesc")}</p>
       </div>
       <LoadingSkeleton />
     </div>
@@ -160,8 +163,8 @@ export default function AIReportPage() {
     <div className="p-6 lg:p-8 max-w-7xl mx-auto space-y-8">
       <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2"><Brain className="w-7 h-7 text-primary" /><h1 className="text-3xl font-bold tracking-tight">AI Financial Report</h1></div>
-          <p className="text-muted-foreground mt-1">AI-powered insights into your financial health</p>
+          <div className="flex items-center gap-2"><Brain className="w-7 h-7 text-primary" /><h1 className="text-3xl font-bold tracking-tight">{t("aiReport.title")}</h1></div>
+          <p className="text-muted-foreground mt-1">{t("aiReport.description")}</p>
         </div>
         <div className="flex items-center gap-3">
           <Tabs value={range} onValueChange={(v) => { setRange(v as Range); setGenerated(false); }}>
@@ -169,7 +172,7 @@ export default function AIReportPage() {
           </Tabs>
           <Button onClick={handleGenerate} className="gap-2">
             {generated ? <RefreshCw className="w-4 h-4" /> : <Sparkles className="w-4 h-4" />}
-            {generated ? "Regenerate" : "Generate Report"}
+            {generated ? t("aiReport.regenerate") : t("aiReport.generateReport")}
           </Button>
         </div>
       </motion.div>
@@ -177,12 +180,12 @@ export default function AIReportPage() {
       {!generated ? (
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col items-center justify-center py-24 text-center">
           <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center mb-6"><Brain className="w-10 h-10 text-primary" /></div>
-          <h2 className="text-2xl font-bold mb-2">Ready to Analyze</h2>
-          <p className="text-muted-foreground max-w-md mb-8">Click "Generate Report" to get AI-powered insights into your financial health, spending patterns, and savings opportunities.</p>
-          <Button onClick={handleGenerate} size="lg" className="gap-2"><Sparkles className="w-5 h-5" /> Generate Report</Button>
+          <h2 className="text-2xl font-bold mb-2">{t("aiReport.readyToAnalyze")}</h2>
+          <p className="text-muted-foreground max-w-md mb-8">{t("aiReport.readyToAnalyzeDesc")}</p>
+          <Button onClick={handleGenerate} size="lg" className="gap-2"><Sparkles className="w-5 h-5" /> {t("aiReport.generateReport")}</Button>
         </motion.div>
       ) : !analysis ? (
-        <Card className="p-12 text-center text-muted-foreground">No transaction data available. Add transactions to generate insights.</Card>
+        <Card className="p-12 text-center text-muted-foreground">{t("aiReport.noData")}</Card>
       ) : (
         <>
           <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}>
@@ -191,10 +194,10 @@ export default function AIReportPage() {
 
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { icon: DollarSign, label: "Total Income", value: formatCurrency(analysis.income), color: "bg-green-500" },
-              { icon: TrendingDown, label: "Total Expenses", value: formatCurrency(analysis.expenses), color: "bg-red-500" },
-              { icon: PiggyBank, label: "Net Savings", value: formatCurrency(analysis.savings), color: "bg-blue-500" },
-              { icon: Target, label: "Savings Rate", value: `${analysis.savingsRate.toFixed(1)}%`, color: "bg-purple-500" },
+              { icon: DollarSign, label: t("aiReport.totalIncome"), value: formatCurrency(analysis.income), color: "bg-green-500" },
+              { icon: TrendingDown, label: t("aiReport.totalExpenses"), value: formatCurrency(analysis.expenses), color: "bg-red-500" },
+              { icon: PiggyBank, label: t("aiReport.netSavings"), value: formatCurrency(analysis.savings), color: "bg-blue-500" },
+              { icon: Target, label: t("aiReport.savingsRate"), value: `${analysis.savingsRate.toFixed(1)}%`, color: "bg-purple-500" },
             ].map((s, i) => (
               <motion.div key={s.label} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.05 }}>
                 <Card className="hover:shadow-md transition-shadow h-full"><CardContent className="p-5">
@@ -207,13 +210,13 @@ export default function AIReportPage() {
           </div>
 
           <div>
-            <h2 className="text-xl font-bold tracking-tight mb-4">Key Insights</h2>
+            <h2 className="text-xl font-bold tracking-tight mb-4">{t("aiReport.keyInsights")}</h2>
             <div className="grid md:grid-cols-2 gap-4">
               {[
-                { icon: PieChart, title: "Biggest Expense Category", value: analysis.topCategory ? `${analysis.topCategory.name} — ${formatCurrency(analysis.topCategory.value)}` : "No data", color: "bg-purple-500", pct: undefined as number | undefined },
-                { icon: analysis.spendingTrend > 0 ? TrendingUp : TrendingDown, title: "Spending Trend", value: `${Math.abs(analysis.spendingTrend).toFixed(1)}% ${analysis.spendingTrend > 0 ? "increase" : "decrease"}`, color: analysis.spendingTrend > 0 ? "bg-red-500" : "bg-green-500", pct: undefined },
-                { icon: Target, title: "Budget Utilization", value: budget > 0 ? `${analysis.budgetPct.toFixed(0)}% used` : "No budget set", color: "bg-blue-500", pct: budget > 0 ? Math.min(analysis.budgetPct, 100) : undefined },
-                { icon: PiggyBank, title: "Savings Momentum", value: analysis.savingsTrend === "up" ? "Savings increasing" : "Savings decreasing", color: analysis.savingsTrend === "up" ? "bg-green-500" : "bg-amber-500", pct: undefined },
+                { icon: PieChart, title: t("aiReport.biggestExpenseCategory"), value: analysis.topCategory ? `${analysis.topCategory.name} — ${formatCurrency(analysis.topCategory.value)}` : "No data", color: "bg-purple-500", pct: undefined as number | undefined },
+                { icon: analysis.spendingTrend > 0 ? TrendingUp : TrendingDown, title: t("aiReport.spendingTrend"), value: `${Math.abs(analysis.spendingTrend).toFixed(1)}% ${analysis.spendingTrend > 0 ? t("aiReport.increase") : t("aiReport.decrease")}`, color: analysis.spendingTrend > 0 ? "bg-red-500" : "bg-green-500", pct: undefined },
+                { icon: Target, title: t("aiReport.budgetUtilization"), value: budget > 0 ? `${analysis.budgetPct.toFixed(0)}% ${t("aiReport.used")}` : t("aiReport.budgetNotSet"), color: "bg-blue-500", pct: budget > 0 ? Math.min(analysis.budgetPct, 100) : undefined },
+                { icon: PiggyBank, title: t("aiReport.savingsMomentum"), value: analysis.savingsTrend === "up" ? t("aiReport.savingsIncreasing") : t("aiReport.savingsDecreasing"), color: analysis.savingsTrend === "up" ? "bg-green-500" : "bg-amber-500", pct: undefined },
               ].map((ins, i) => (
                 <motion.div key={ins.title} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 + i * 0.05 }}>
                   <Card className="hover:shadow-md transition-shadow h-full"><CardContent className="p-5">
@@ -230,7 +233,7 @@ export default function AIReportPage() {
           <Separator />
 
           <div>
-            <h2 className="text-xl font-bold tracking-tight mb-4">Recommendations</h2>
+            <h2 className="text-xl font-bold tracking-tight mb-4">{t("aiReport.recommendations")}</h2>
             <div className="space-y-3">
               {analysis.recommendations.map((rec, i) => (
                 <motion.div key={rec.title} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.5 + i * 0.05 }}>
@@ -253,7 +256,7 @@ export default function AIReportPage() {
 
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.65 }}>
             <Card>
-              <CardHeader><CardTitle className="text-sm font-medium">Monthly Score Trend</CardTitle><CardDescription>Your financial health score over the last 6 months</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="text-sm font-medium">{t("aiReport.monthlyScoreTrend")}</CardTitle><CardDescription>{t("aiReport.scoreTrendDesc")}</CardDescription></CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={260}>
                   <AreaChart data={analysis.trend}>
@@ -269,14 +272,14 @@ export default function AIReportPage() {
 
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.75 }}>
             <Card>
-              <CardHeader><CardTitle className="text-sm font-medium flex items-center gap-2"><Calendar className="w-4 h-4" /> Future Projections</CardTitle><CardDescription>Estimated savings based on your current saving rate</CardDescription></CardHeader>
+              <CardHeader><CardTitle className="text-sm font-medium flex items-center gap-2"><Calendar className="w-4 h-4" /> {t("aiReport.futureProjections")}</CardTitle><CardDescription>{t("aiReport.projectionsDesc")}</CardDescription></CardHeader>
               <CardContent>
                 <div className="grid grid-cols-3 gap-4">
                   {analysis.projections.map((p) => (
                     <div key={p.label} className="text-center p-4 rounded-xl bg-muted/50">
                       <p className="text-xs text-muted-foreground">{p.label}</p>
                       <p className="text-xl font-bold mt-1">{formatCurrency(p.amount)}</p>
-                      <p className="text-xs text-muted-foreground mt-0.5">estimated savings</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t("aiReport.estimatedSavings")}</p>
                     </div>
                   ))}
                 </div>

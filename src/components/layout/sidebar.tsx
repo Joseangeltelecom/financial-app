@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Home,
   ArrowLeftRight,
+  Landmark,
   PiggyBank,
   BrainCircuit,
   Settings,
@@ -14,6 +15,7 @@ import {
   User,
   TrendingUp,
 } from "lucide-react";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { useTheme } from "@/hooks/use-theme";
 import { cn, getInitials } from "@/lib/utils";
@@ -24,17 +26,6 @@ interface SidebarProps {
   onMobileClose: () => void;
   isMobile: boolean;
 }
-
-const navItems = [
-  { to: "/dashboard", icon: Home, label: "Home" },
-  { to: "/transactions", icon: ArrowLeftRight, label: "Transactions" },
-  { to: "/savings", icon: PiggyBank, label: "Savings" },
-  { to: "/ai-report", icon: BrainCircuit, label: "AI Report" },
-];
-
-const bottomNavItems = [
-  { to: "/settings", icon: Settings, label: "Settings" },
-];
 
 const sidebarVariants = {
   expanded: { width: 260 },
@@ -47,11 +38,25 @@ const mobileSidebarVariants = {
 };
 
 export function Sidebar({ collapsed, onToggle, onMobileClose, isMobile }: SidebarProps) {
+  const { t } = useTranslation();
   const { user, signOut } = useAuth();
   const { resolvedTheme, toggleTheme } = useTheme();
   const location = useLocation();
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const navItems = [
+    { to: "/dashboard", icon: Home, label: t("sidebar.home") },
+    { to: "/transactions", icon: ArrowLeftRight, label: t("sidebar.transactions") },
+    { to: "/accounts", icon: Landmark, label: t("sidebar.accounts") },
+    { to: "/transfers", icon: ArrowLeftRight, label: t("sidebar.transfers") },
+    { to: "/savings", icon: PiggyBank, label: t("sidebar.savings") },
+    { to: "/ai-report", icon: BrainCircuit, label: t("sidebar.aiReport") },
+  ];
+
+  const bottomNavItems = [
+    { to: "/settings", icon: Settings, label: t("sidebar.settings") },
+  ];
 
   const userName =
     user?.user_metadata?.full_name || user?.email?.split("@")[0] || "User";
@@ -95,7 +100,7 @@ export function Sidebar({ collapsed, onToggle, onMobileClose, isMobile }: Sideba
                 <TrendingUp className="h-4.5 w-4.5 text-white" />
               </div>
               <span className="text-lg font-bold text-gray-900 dark:text-white truncate">
-                FinanceFlow
+                {t("common.appName")}
               </span>
             </motion.div>
           ) : (
@@ -258,13 +263,13 @@ export function Sidebar({ collapsed, onToggle, onMobileClose, isMobile }: Sideba
                 transition={{ duration: 0.15 }}
                 className="truncate"
               >
-                {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
+                {resolvedTheme === "dark" ? t("sidebar.lightMode") : t("sidebar.darkMode")}
               </motion.span>
             )}
           </AnimatePresence>
           {collapsed && !isMobile && (
             <div className="pointer-events-none absolute left-full ml-3 rounded-md bg-gray-900 dark:bg-gray-700 px-2.5 py-1.5 text-xs font-medium text-white opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-              {resolvedTheme === "dark" ? "Light Mode" : "Dark Mode"}
+              {resolvedTheme === "dark" ? t("sidebar.lightMode") : t("sidebar.darkMode")}
             </div>
           )}
         </button>
@@ -340,14 +345,14 @@ export function Sidebar({ collapsed, onToggle, onMobileClose, isMobile }: Sideba
                     className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
                     <User className="h-4 w-4" />
-                    Profile
+                    {t("sidebar.profile")}
                   </button>
                   <button
                     onClick={handleSignOut}
                     className="flex w-full items-center gap-2.5 px-3 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                   >
                     <LogOut className="h-4 w-4" />
-                    Sign Out
+                    {t("sidebar.signOut")}
                   </button>
                 </div>
               </motion.div>

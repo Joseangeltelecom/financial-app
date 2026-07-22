@@ -5,6 +5,7 @@ import { z } from "zod";
 import { motion } from "framer-motion";
 import { Mail, Loader2, CheckCircle } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -24,6 +25,7 @@ const forgotPasswordSchema = z.object({
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -75,10 +77,10 @@ export default function ForgotPasswordPage() {
         <Card className="border-gray-200 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-semibold">
-              Reset your password
+              {t("auth.forgotPassword.title")}
             </CardTitle>
             <CardDescription>
-              Enter your email and we'll send you a reset link
+              {t("auth.forgotPassword.subtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -92,15 +94,14 @@ export default function ForgotPasswordPage() {
                   <CheckCircle className="h-6 w-6 text-green-600" />
                 </div>
                 <div className="space-y-1">
-                  <p className="font-medium text-gray-900">Check your email</p>
+                  <p className="font-medium text-gray-900">{t("auth.forgotPassword.checkEmail")}</p>
                   <p className="text-sm text-gray-500">
-                    We've sent a password reset link to your email address.
-                    Please check your inbox.
+                    {t("auth.forgotPassword.checkEmailDesc")}
                   </p>
                 </div>
                 <Link to="/login">
                   <Button variant="outline" className="w-full">
-                    Back to sign in
+                    {t("auth.forgotPassword.backToSignIn")}
                   </Button>
                 </Link>
               </motion.div>
@@ -121,7 +122,7 @@ export default function ForgotPasswordPage() {
                   className="space-y-4"
                 >
                   <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
+                    <Label htmlFor="email">{t("auth.forgotPassword.emailLabel")}</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                       <Input
@@ -151,7 +152,7 @@ export default function ForgotPasswordPage() {
                     {isLoading ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : null}
-                    Send Reset Link
+                    {t("auth.forgotPassword.sendResetLink")}
                   </Button>
                 </form>
 
@@ -160,7 +161,7 @@ export default function ForgotPasswordPage() {
                     to="/login"
                     className="font-medium text-gray-900 hover:underline"
                   >
-                    Back to sign in
+                    {t("auth.forgotPassword.backToSignIn")}
                   </Link>
                 </p>
               </>

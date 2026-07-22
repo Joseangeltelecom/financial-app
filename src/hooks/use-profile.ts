@@ -26,6 +26,21 @@ async function getProfile() {
     .eq("id", user.id)
     .single();
 
+  if (error && error.code === "PGRST116") {
+    const { data: created, error: createError } = await supabase
+      .from("profiles")
+      .insert({
+        id: user.id,
+        email: user.email ?? "",
+        full_name: user.user_metadata?.full_name ?? "",
+      })
+      .select()
+      .single();
+
+    if (createError) throw createError;
+    return created as Profile;
+  }
+
   if (error) throw error;
   return data as Profile;
 }
@@ -47,8 +62,12 @@ export function useUpdateProfile() {
 
       const { data, error } = await supabase
         .from("profiles")
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq("id", user.id)
+        .upsert({
+          id: user.id,
+          email: user.email ?? "",
+          ...updates,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: "id" })
         .select()
         .single();
 

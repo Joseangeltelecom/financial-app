@@ -5,6 +5,7 @@ import { z } from "zod";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, Loader2, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -74,6 +75,7 @@ const GoogleIcon = () => (
 );
 
 export default function SignupPage() {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const { signUp, loading: isLoading } = useAuth();
@@ -136,10 +138,10 @@ export default function SignupPage() {
         <Card className="border-gray-200 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-semibold">
-              Create your account
+              {t("auth.signup.title")}
             </CardTitle>
             <CardDescription>
-              Start managing your finances today
+              {t("auth.signup.subtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -155,7 +157,7 @@ export default function SignupPage() {
 
             <Button variant="outline" className="w-full" disabled={isLoading}>
               <GoogleIcon />
-              <span className="ml-2">Sign up with Google</span>
+              <span className="ml-2">{t("auth.signup.signUpGoogle")}</span>
             </Button>
 
             <div className="relative">
@@ -163,13 +165,13 @@ export default function SignupPage() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">or</span>
+                <span className="bg-white px-2 text-gray-500">{t("common.or")}</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full Name</Label>
+                <Label htmlFor="fullName">{t("auth.signup.fullNameLabel")}</Label>
                 <div className="relative">
                   <User className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
@@ -192,7 +194,7 @@ export default function SignupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.signup.emailLabel")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
@@ -215,13 +217,13 @@ export default function SignupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">{t("auth.signup.passwordLabel")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Create a strong password"
+                    placeholder={t("auth.signup.passwordPlaceholder")}
                     className={cn(
                       "pl-10 pr-10",
                       errors.password &&
@@ -261,7 +263,7 @@ export default function SignupPage() {
                       ))}
                     </div>
                     <p className="text-xs text-gray-500">
-                      Password strength:{" "}
+                      {t("auth.signup.strength")}:{" "}
                       <span className="font-medium">{strength.label}</span>
                     </p>
                   </div>
@@ -269,13 +271,13 @@ export default function SignupPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password</Label>
+                <Label htmlFor="confirmPassword">{t("auth.signup.confirmPasswordLabel")}</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
                     id="confirmPassword"
                     type={showConfirmPassword ? "text" : "password"}
-                    placeholder="Confirm your password"
+                    placeholder={t("auth.signup.confirmPasswordPlaceholder")}
                     className={cn(
                       "pl-10 pr-10",
                       errors.confirmPassword &&
@@ -308,17 +310,17 @@ export default function SignupPage() {
                 {isLoading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Create Account
+                {t("auth.signup.createAccount")}
               </Button>
             </form>
 
             <p className="text-center text-sm text-gray-600">
-              Already have an account?{" "}
+              {t("auth.signup.hasAccount")}{" "}
               <Link
                 to="/login"
                 className="font-medium text-gray-900 hover:underline"
               >
-                Sign in
+                {t("auth.signup.signIn")}
               </Link>
             </p>
           </CardContent>

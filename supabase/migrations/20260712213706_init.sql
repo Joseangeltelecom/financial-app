@@ -152,7 +152,6 @@ create table if not exists public.saving_goals (
   name text not null,
   target_amount numeric(12,2) not null,
   current_amount numeric(12,2) not null default 0,
-  currency text not null default 'USD',
   deadline date,
   color text not null default '#6366f1',
   icon text not null default 'PiggyBank',
@@ -166,80 +165,6 @@ alter table public.saving_goals enable row level security;
 create policy "Users can manage own saving goals"
   on public.saving_goals for all
   using (auth.uid() = user_id);
-
--- ============================================================
--- SAVINGS TRANSACTIONS
--- ============================================================
-create table if not exists public.savings_transactions (
-  id uuid default gen_random_uuid() primary key,
-  user_id uuid references public.profiles(id) on delete cascade not null,
-  saving_goal_id uuid references public.saving_goals(id) on delete cascade not null,
-  account_id uuid references public.accounts(id) on delete set null,
-  type text not null check (type in ('deposit', 'withdrawal')),
-  amount numeric(12,2) not null check (amount > 0),
-  description text,
-  date date not null default CURRENT_DATE,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
-);
-
-alter table public.savings_transactions enable row level security;
-
-create policy "Users can manage own savings transactions"
-  on public.savings_transactions for all
-  using (auth.uid() = user_id);
-
-create index idx_savings_transactions_user_id on public.savings_transactions(user_id);
-create index idx_savings_transactions_saving_goal_id on public.savings_transactions(saving_goal_id);
-create index idx_savings_transactions_date on public.savings_transactions(date);
-
--- Function to update account balance and saving goal current_amount
-create or replace function public.handle_savings_transaction_balance()
-returns trigger as $$
-begin
-  if tg_op = 'INSERT' then
-    if new.type = 'deposit' then
-      update public.accounts set balance = balance - new.amount, updated_at = now() where id = new.account_id;
-      update public.saving_goals set current_amount = current_amount + new.amount, updated_at = now() where id = new.saving_goal_id;
-    elsif new.type = 'withdrawal' then
-      update public.accounts set balance = balance + new.amount, updated_at = now() where id = new.account_id;
-      update public.saving_goals set current_amount = current_amount - new.amount, updated_at = now() where id = new.saving_goal_id;
-    end if;
-  elsif tg_op = 'UPDATE' then
-    if old.type = 'deposit' then
-      update public.accounts set balance = balance + old.amount, updated_at = now() where id = old.account_id;
-      update public.saving_goals set current_amount = current_amount - old.amount, updated_at = now() where id = old.saving_goal_id;
-    elsif old.type = 'withdrawal' then
-      update public.accounts set balance = balance - old.amount, updated_at = now() where id = old.account_id;
-      update public.saving_goals set current_amount = current_amount + old.amount, updated_at = now() where id = old.saving_goal_id;
-    end if;
-    if new.type = 'deposit' then
-      update public.accounts set balance = balance - new.amount, updated_at = now() where id = new.account_id;
-      update public.saving_goals set current_amount = current_amount + new.amount, updated_at = now() where id = new.saving_goal_id;
-    elsif new.type = 'withdrawal' then
-      update public.accounts set balance = balance + new.amount, updated_at = now() where id = new.account_id;
-      update public.saving_goals set current_amount = current_amount - new.amount, updated_at = now() where id = new.saving_goal_id;
-    end if;
-  elsif tg_op = 'DELETE' then
-    if old.type = 'deposit' then
-      update public.accounts set balance = balance + old.amount, updated_at = now() where id = old.account_id;
-      update public.saving_goals set current_amount = current_amount - old.amount, updated_at = now() where id = old.saving_goal_id;
-    elsif old.type = 'withdrawal' then
-      update public.accounts set balance = balance - old.amount, updated_at = now() where id = old.account_id;
-      update public.saving_goals set current_amount = current_amount + old.amount, updated_at = now() where id = old.saving_goal_id;
-    end if;
-  end if;
-
-  if tg_op = 'DELETE' then
-    return old;
-  end if;
-  return new;
-end;
-$$ language plpgsql security definer;
-
-create or replace trigger on_savings_transaction_balance_change
-  after insert or update or delete on public.savings_transactions
-  for each row execute function public.handle_savings_transaction_balance();
 
 -- ============================================================
 -- MONTHLY SUMMARIES

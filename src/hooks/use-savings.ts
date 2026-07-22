@@ -7,6 +7,7 @@ export interface SavingsGoal {
   name: string;
   target_amount: number;
   current_amount: number;
+  currency: string;
   deadline: string | null;
   color: string;
   icon: string;
@@ -26,7 +27,23 @@ async function getSavingsGoals() {
     .order("created_at", { ascending: false });
 
   if (error) throw error;
-  return data as SavingsGoal[];
+
+  const goals = data as SavingsGoal[];
+  goals.sort((a, b) => {
+    const aHasDeadline = !!a.deadline;
+    const bHasDeadline = !!b.deadline;
+    if (aHasDeadline && bHasDeadline) {
+      const deadlineDiff = new Date(a.deadline!).getTime() - new Date(b.deadline!).getTime();
+      if (deadlineDiff !== 0) return deadlineDiff;
+    } else if (aHasDeadline !== bHasDeadline) {
+      return aHasDeadline ? -1 : 1;
+    }
+    const aPct = a.target_amount > 0 ? a.current_amount / a.target_amount : 0;
+    const bPct = b.target_amount > 0 ? b.current_amount / b.target_amount : 0;
+    return bPct - aPct;
+  });
+
+  return goals;
 }
 
 export function useSavingsGoals() {

@@ -1,36 +1,47 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Plus, Target, Calendar, TrendingUp, Edit, Trash2, PiggyBank, Trophy, DollarSign } from "lucide-react";
+import { Plus, Target, Calendar, TrendingUp, Edit, Trash2, PiggyBank, Trophy, DollarSign, ArrowDownToLine, ArrowUpFromLine, History } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Tooltip } from "recharts";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/use-auth";
 import { useSavingsGoals, useCreateSavingsGoal, useUpdateSavingsGoal, useDeleteSavingsGoal } from "@/hooks/use-savings";
+import { useSavingsTransactions, useCreateSavingsTransaction, useDeleteSavingsTransaction } from "@/hooks/use-savings-transactions";
+import { useAccounts } from "@/hooks/use-accounts";
 import { useTransactions } from "@/hooks/use-transactions";
 import { cn, formatCurrency, getPercentage } from "@/lib/utils";
-import { CHART_COLORS } from "@/config/constants";
+import { CHART_COLORS, CURRENCIES } from "@/config/constants";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
 
 const goalSchema = z.object({
   name: z.string().min(1, "Name is required"),
   target_amount: z.number().positive("Target must be positive"),
   current_amount: z.number().min(0, "Cannot be negative").optional(),
+  currency: z.string().min(1, "Currency is required"),
   deadline: z.string().optional(),
   color: z.string().optional(),
 });
 type GoalFormData = z.infer<typeof goalSchema>;
+
+const transferSchema = z.object({
+  account_id: z.string().min(1, "Account is required"),
+  amount: z.number().positive("Amount must be positive"),
+  description: z.string().optional(),
+});
+type TransferFormData = z.infer<typeof transferSchema>;
 
 const PRESET_COLORS = ["#6366f1", "#f59e0b", "#ef4444", "#22c55e", "#3b82f6", "#ec4899", "#8b5cf6", "#06b6d4", "#f97316", "#14b8a6"];
 const PRESET_ICONS = ["PiggyBank", "Trophy", "Target", "TrendingUp", "Calendar", "DollarSign"];
@@ -58,15 +69,23 @@ function GoalCard({
   goal,
   onEdit,
   onDelete,
+  onDeposit,
+  onWithdraw,
+  onViewHistory,
 }: {
   goal: any;
   onEdit: (g: any) => void;
   onDelete: (g: any) => void;
+  onDeposit: (g: any) => void;
+  onWithdraw: (g: any) => void;
+  onViewHistory: (g: any) => void;
 }) {
+  const { t } = useTranslation();
   const pct = goal.target_amount > 0 ? Math.min((goal.current_amount / goal.target_amount) * 100, 100) : 0;
   const Icon = getIconForGoal(goal);
   const color = goal.color || PRESET_COLORS[0];
   const isComplete = goal.current_amount >= goal.target_amount;
+  const currency = goal.currency || "USD";
 
   return (
     <motion.div variants={cardVariants} layout>
@@ -83,9 +102,12 @@ function GoalCard({
                 <Icon className="w-5 h-5" style={{ color }} />
               </div>
               <div>
-                <h3 className="font-semibold text-sm">{goal.name}</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-sm">{goal.name}</h3>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 h-4 font-medium">{currency}</Badge>
+                </div>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  {formatCurrency(goal.current_amount)} / {formatCurrency(goal.target_amount)}
+                  {formatCurrency(goal.current_amount, currency)} / {formatCurrency(goal.target_amount, currency)}
                 </p>
               </div>
             </div>
@@ -101,7 +123,7 @@ function GoalCard({
 
           <div className="space-y-2">
             <div className="flex justify-between text-xs text-muted-foreground">
-              <span>Progress</span>
+              <span>{t("savings.progress")}</span>
               <span className="font-medium" style={{ color: isComplete ? "#22c55e" : color }}>{pct.toFixed(1)}%</span>
             </div>
             <div className="h-2.5 bg-muted rounded-full overflow-hidden">
@@ -125,10 +147,41 @@ function GoalCard({
           {isComplete && (
             <div className="mt-3">
               <Badge variant="default" className="bg-emerald-500/10 text-emerald-500 border-emerald-500/20 gap-1">
-                <Trophy className="h-3 w-3" /> Goal Achieved
+                <Trophy className="h-3 w-3" /> {t("savings.goalAchieved")}
               </Badge>
             </div>
           )}
+
+          <div className="flex gap-2 mt-4">
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5 text-xs"
+              onClick={() => onDeposit(goal)}
+              disabled={isComplete}
+            >
+              <ArrowDownToLine className="h-3.5 w-3.5" />
+              {t("savings.deposit")}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 gap-1.5 text-xs"
+              onClick={() => onWithdraw(goal)}
+              disabled={goal.current_amount <= 0}
+            >
+              <ArrowUpFromLine className="h-3.5 w-3.5" />
+              {t("savings.withdraw")}
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-8 w-8 shrink-0"
+              onClick={() => onViewHistory(goal)}
+            >
+              <History className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </motion.div>
@@ -148,6 +201,7 @@ function GoalForm({
   isLoading: boolean;
   defaultValues?: Partial<GoalFormData & { icon?: string; current_amount?: number }>;
 }) {
+  const { t } = useTranslation();
   const {
     register,
     handleSubmit,
@@ -161,6 +215,7 @@ function GoalForm({
       name: "",
       target_amount: undefined,
       current_amount: undefined,
+      currency: "USD",
       deadline: "",
       color: PRESET_COLORS[0],
       ...defaultValues,
@@ -168,7 +223,8 @@ function GoalForm({
   });
 
   const selectedColor = watch("color") || "#6366f1";
-  const selectedIcon = defaultValues?.icon || "PiggyBank";
+  const selectedCurrency = watch("currency") || "USD";
+  const currencySymbol = CURRENCIES.find((c) => c.code === selectedCurrency)?.symbol || "$";
 
   const handleClose = (v: boolean) => {
     if (!v) reset();
@@ -179,20 +235,37 @@ function GoalForm({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
-          <DialogTitle>{defaultValues?.name ? "Edit Goal" : "Create Goal"}</DialogTitle>
+          <DialogTitle>{defaultValues?.name ? t("savings.editGoal") : t("savings.createGoal")}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="space-y-2">
-            <Label>Goal Name</Label>
-            <Input {...register("name")} placeholder="e.g. Emergency Fund" className="bg-background" />
+            <Label>{t("savings.form.goalName")}</Label>
+            <Input {...register("name")} placeholder={t("savings.form.goalNamePlaceholder")} className="bg-background" />
             {errors.name && <p className="text-xs text-rose-500">{errors.name.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("savings.form.currency")}</Label>
+            <Select value={selectedCurrency} onValueChange={(v) => setValue("currency", v)}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder="USD" />
+              </SelectTrigger>
+              <SelectContent>
+                {CURRENCIES.map((c) => (
+                  <SelectItem key={c.code} value={c.code}>
+                    <span>{c.symbol} {c.name} ({c.code})</span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.currency && <p className="text-xs text-rose-500">{errors.currency.message}</p>}
           </div>
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>Target Amount</Label>
+              <Label>{t("savings.form.targetAmount")}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -204,9 +277,9 @@ function GoalForm({
               {errors.target_amount && <p className="text-xs text-rose-500">{errors.target_amount.message}</p>}
             </div>
             <div className="space-y-2">
-              <Label>Current Amount</Label>
+              <Label>{t("savings.form.currentAmount")}</Label>
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{currencySymbol}</span>
                 <Input
                   type="number"
                   step="0.01"
@@ -220,12 +293,12 @@ function GoalForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Deadline <span className="text-muted-foreground text-xs">(optional)</span></Label>
+            <Label>{t("savings.form.deadline")} <span className="text-muted-foreground text-xs">(optional)</span></Label>
             <Input type="date" {...register("deadline")} className="bg-background" />
           </div>
 
           <div className="space-y-2">
-            <Label>Color</Label>
+            <Label>{t("savings.form.color")}</Label>
             <div className="flex gap-2 flex-wrap">
               {PRESET_COLORS.map((c) => (
                 <button
@@ -243,7 +316,7 @@ function GoalForm({
           </div>
 
           <div className="space-y-2">
-            <Label>Icon</Label>
+            <Label>{t("savings.form.icon")}</Label>
             <div className="flex gap-2 flex-wrap">
               {PRESET_ICONS.map((iconName) => {
                 const Icon = ICON_MAP[iconName];
@@ -269,10 +342,10 @@ function GoalForm({
 
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={() => handleClose(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : defaultValues?.name ? "Save Changes" : "Create Goal"}
+              {isLoading ? t("common.saving") : defaultValues?.name ? t("savings.form.saveChanges") : t("savings.createGoal")}
             </Button>
           </DialogFooter>
         </form>
@@ -281,18 +354,329 @@ function GoalForm({
   );
 }
 
+function TransferDialog({
+  open,
+  onOpenChange,
+  goal,
+  type,
+  accounts,
+  onSubmit,
+  isLoading,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  goal: any;
+  type: "deposit" | "withdrawal";
+  accounts: any[];
+  onSubmit: (data: TransferFormData) => void;
+  isLoading: boolean;
+}) {
+  const { t } = useTranslation();
+  const {
+    register,
+    handleSubmit,
+    setValue,
+    watch,
+    reset,
+    formState: { errors },
+  } = useForm<TransferFormData>({
+    resolver: zodResolver(transferSchema),
+    defaultValues: {
+      account_id: "",
+      amount: undefined,
+      description: "",
+    },
+  });
+
+  const selectedAccountId = watch("account_id");
+
+  const handleClose = (v: boolean) => {
+    if (!v) reset();
+    onOpenChange(v);
+  };
+
+  const isDeposit = type === "deposit";
+  const goalCurrency = goal?.currency || "USD";
+  const goalCurrencySymbol = CURRENCIES.find((c) => c.code === goalCurrency)?.symbol || "$";
+  const selectedAccount = accounts.find((a) => a.id === selectedAccountId);
+  const accountCurrencySymbol = selectedAccount
+    ? CURRENCIES.find((c) => c.code === selectedAccount.currency)?.symbol || "$"
+    : "$";
+
+  return (
+    <Dialog open={open} onOpenChange={handleClose}>
+      <DialogContent className="sm:max-w-[440px]">
+        <DialogHeader>
+          <DialogTitle>{isDeposit ? t("savings.depositTitle") : t("savings.withdrawTitle")}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
+            <div
+              className="flex items-center justify-center w-9 h-9 rounded-lg"
+              style={{ backgroundColor: `${goal?.color || PRESET_COLORS[0]}15` }}
+            >
+              {isDeposit
+                ? <ArrowDownToLine className="h-4 w-4" style={{ color: goal?.color || PRESET_COLORS[0] }} />
+                : <ArrowUpFromLine className="h-4 w-4" style={{ color: goal?.color || PRESET_COLORS[0] }} />
+              }
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <p className="text-sm font-medium">{goal?.name}</p>
+                <Badge variant="secondary" className="text-[10px] px-1.5 h-4 font-medium">{goalCurrency}</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {isDeposit ? t("savings.depositDesc") : t("savings.withdrawDesc")}
+              </p>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("savings.selectAccount")}</Label>
+            <Select value={selectedAccountId} onValueChange={(v) => setValue("account_id", v)}>
+              <SelectTrigger className="bg-background">
+                <SelectValue placeholder={t("savings.selectAccount")} />
+              </SelectTrigger>
+              <SelectContent>
+                {accounts.filter((a) => a.is_active).map((account) => (
+                  <SelectItem key={account.id} value={account.id}>
+                    <div className="flex items-center gap-2">
+                      <span>{account.name}</span>
+                      <span className="text-muted-foreground text-xs">
+                        ({formatCurrency(account.balance + (account.initial_balance || 0), account.currency)})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.account_id && <p className="text-xs text-rose-500">{errors.account_id.message}</p>}
+            {selectedAccount && selectedAccount.currency !== goalCurrency && (
+              <p className="text-xs text-amber-500">
+                {t("savings.currencyMismatch", { from: selectedAccount.currency, to: goalCurrency })}
+              </p>
+            )}
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("savings.amount")}</Label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">{goalCurrencySymbol}</span>
+              <Input
+                type="number"
+                step="0.01"
+                {...register("amount", { valueAsNumber: true })}
+                placeholder="0.00"
+                className="pl-7 bg-background"
+              />
+            </div>
+            {errors.amount && <p className="text-xs text-rose-500">{errors.amount.message}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t("savings.description")} <span className="text-muted-foreground text-xs">({t("common.optional")})</span></Label>
+            <Input
+              {...register("description")}
+              placeholder={t("savings.descriptionPlaceholder")}
+              className="bg-background"
+            />
+          </div>
+
+          <DialogFooter>
+            <Button type="button" variant="ghost" onClick={() => handleClose(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? t("common.saving") : isDeposit ? t("savings.confirmDeposit") : t("savings.confirmWithdraw")}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function TransactionHistoryDialog({
+  open,
+  onOpenChange,
+  goal,
+  transactions,
+  onDelete,
+  isDeleting,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  goal: any;
+  transactions: any[];
+  onDelete: (id: string) => void;
+  isDeleting: boolean;
+}) {
+  const { t } = useTranslation();
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  const goalTransactions = transactions.filter((st) => st.saving_goal_id === goal?.id);
+  const goalCurrency = goal?.currency || "USD";
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[520px] max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <History className="h-4 w-4" />
+            {t("savings.transactionHistory")}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex-1 overflow-y-auto min-h-0">
+          {goalTransactions.length === 0 ? (
+            <div className="flex flex-col items-center gap-3 py-8 text-center">
+              <div className="h-12 w-12 rounded-full bg-muted flex items-center justify-center">
+                <History className="h-6 w-6 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium">{t("savings.noTransactions")}</p>
+                <p className="text-xs text-muted-foreground mt-1">{t("savings.noTransactionsDesc")}</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {goalTransactions.map((tx) => (
+                <div
+                  key={tx.id}
+                  className="flex items-center justify-between p-3 rounded-lg border border-border/50 hover:bg-muted/30 transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={cn(
+                      "flex items-center justify-center w-8 h-8 rounded-lg",
+                      tx.type === "deposit" ? "bg-emerald-500/10" : "bg-amber-500/10",
+                    )}>
+                      {tx.type === "deposit"
+                        ? <ArrowDownToLine className="h-4 w-4 text-emerald-500" />
+                        : <ArrowUpFromLine className="h-4 w-4 text-amber-500" />
+                      }
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <Badge
+                          variant="secondary"
+                          className={cn(
+                            "text-[10px] px-1.5 h-4",
+                            tx.type === "deposit"
+                              ? "bg-emerald-500/10 text-emerald-500"
+                              : "bg-amber-500/10 text-amber-500",
+                          )}
+                        >
+                          {tx.type === "deposit" ? t("savings.depositLabel") : t("savings.withdrawalLabel")}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">{tx.account?.name}</span>
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        {format(new Date(tx.date), "MMM d, yyyy")}
+                        {tx.description && ` - ${tx.description}`}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={cn(
+                      "text-sm font-medium tabular-nums",
+                      tx.type === "deposit" ? "text-emerald-500" : "text-amber-500",
+                    )}>
+                      {tx.type === "deposit" ? "+" : "-"}{formatCurrency(tx.amount, goalCurrency)}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 text-muted-foreground hover:text-rose-500"
+                      onClick={() => setDeleteId(tx.id)}
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>
+            {t("common.close")}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+
+      <Dialog open={!!deleteId} onOpenChange={(v) => { if (!v) setDeleteId(null); }}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>{t("savings.deleteTransaction")}</DialogTitle>
+          </DialogHeader>
+          <p className="text-muted-foreground text-sm">{t("savings.deleteTransactionConfirm")}</p>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeleteId(null)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                if (deleteId) {
+                  onDelete(deleteId);
+                  setDeleteId(null);
+                }
+              }}
+              disabled={isDeleting}
+            >
+              {isDeleting ? t("common.deleting") : t("common.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Dialog>
+  );
+}
+
 export default function SavingsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: goals = [], isLoading: goalsLoading } = useSavingsGoals();
+  const { data: accounts = [] } = useAccounts();
   const { data: transactions = [] } = useTransactions();
+  const { data: savingsTransactions = [] } = useSavingsTransactions();
   const createMutation = useCreateSavingsGoal();
   const updateMutation = useUpdateSavingsGoal();
   const deleteMutation = useDeleteSavingsGoal();
+  const createSavingsTxMutation = useCreateSavingsTransaction();
+  const deleteSavingsTxMutation = useDeleteSavingsTransaction();
 
   const [formOpen, setFormOpen] = useState(false);
   const [editItem, setEditItem] = useState<any>(null);
   const [deleteItem, setDeleteItem] = useState<any>(null);
   const [chartTimeFilter, setChartTimeFilter] = useState("monthly");
+  const [transferDialog, setTransferDialog] = useState<{ open: boolean; goal: any; type: "deposit" | "withdrawal" }>({
+    open: false, goal: null, type: "deposit",
+  });
+  const [historyDialog, setHistoryDialog] = useState<{ open: boolean; goal: any }>({
+    open: false, goal: null,
+  });
+
+  const [baseCurrency, setBaseCurrency] = useState<string>("USD");
+  const [exchangeRates, setExchangeRates] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    const saved = localStorage.getItem("base_currency");
+    if (saved) setBaseCurrency(saved);
+    try {
+      const rates = JSON.parse(localStorage.getItem("exchange_rates") || "{}");
+      setExchangeRates(rates);
+    } catch {}
+  }, []);
+
+  const toBase = (amount: number, currency?: string | null) => {
+    if (!currency || currency === baseCurrency) return amount;
+    const rate = exchangeRates[currency];
+    return (rate != null && rate > 0) ? amount / rate : amount;
+  };
+
+  const baseCurrencySymbol = CURRENCIES.find((c) => c.code === baseCurrency)?.symbol || "$";
 
   const openCreate = () => {
     setEditItem(null);
@@ -300,26 +684,27 @@ export default function SavingsPage() {
   };
 
   const handleSubmit = (data: GoalFormData) => {
+    const payload = { ...data, deadline: data.deadline || null, icon: editItem?.icon || "PiggyBank" };
     if (editItem) {
       updateMutation.mutate(
-        { id: editItem.id, ...data, icon: editItem.icon },
+        { id: editItem.id, ...payload },
         {
           onSuccess: () => {
-            toast.success("Goal updated");
+            toast.success(t("savings.goalUpdated"));
             setFormOpen(false);
           },
-          onError: () => toast.error("Failed to update goal"),
+          onError: () => toast.error(t("savings.goalUpdateError")),
         },
       );
     } else {
       createMutation.mutate(
-        { ...data, icon: "PiggyBank", user_id: user?.id } as any,
+        { ...payload, user_id: user?.id, current_amount: data.current_amount || 0, is_active: true, currency: data.currency || "USD" } as any,
         {
           onSuccess: () => {
-            toast.success("Goal created");
+            toast.success(t("savings.goalCreated"));
             setFormOpen(false);
           },
-          onError: () => toast.error("Failed to create goal"),
+          onError: () => toast.error(t("savings.goalCreateError")),
         },
       );
     }
@@ -329,15 +714,45 @@ export default function SavingsPage() {
     if (!deleteItem) return;
     deleteMutation.mutate(deleteItem.id, {
       onSuccess: () => {
-        toast.success("Goal deleted");
+        toast.success(t("savings.goalDeleted"));
         setDeleteItem(null);
       },
-      onError: () => toast.error("Failed to delete goal"),
+      onError: () => toast.error(t("savings.goalDeleteError")),
     });
   };
 
-  const incomeTx = transactions.filter((t: any) => t.type === "income" && t.date);
-  const expenseTx = transactions.filter((t: any) => t.type === "expense" && t.date);
+  const handleTransfer = (data: TransferFormData) => {
+    if (!transferDialog.goal) return;
+    createSavingsTxMutation.mutate(
+      {
+        user_id: user?.id!,
+        saving_goal_id: transferDialog.goal.id,
+        account_id: data.account_id,
+        type: transferDialog.type,
+        amount: data.amount,
+        description: data.description || null,
+        date: format(new Date(), "yyyy-MM-dd"),
+      },
+      {
+        onSuccess: () => {
+          toast.success(transferDialog.type === "deposit" ? t("savings.depositSuccess") : t("savings.withdrawSuccess"));
+          setTransferDialog({ open: false, goal: null, type: "deposit" });
+        },
+        onError: () => toast.error(transferDialog.type === "deposit" ? t("savings.depositError") : t("savings.withdrawError")),
+      },
+    );
+  };
+
+  const handleDeleteSavingsTx = (id: string) => {
+    deleteSavingsTxMutation.mutate(id, {
+      onSuccess: () => {
+        toast.success(t("common.delete") + " " + t("common.confirm").toLowerCase());
+      },
+    });
+  };
+
+  const incomeTx = transactions.filter((tx: any) => tx.type === "income" && tx.date);
+  const expenseTx = transactions.filter((tx: any) => tx.type === "expense" && tx.date);
 
   const monthlySavingsData = useMemo(() => {
     const map = new Map<string, { income: number; expense: number; count: number }>();
@@ -348,13 +763,13 @@ export default function SavingsPage() {
       const label = format(d, "MMM yyyy");
       map.set(key, { income: 0, expense: 0, count: 0 });
     }
-    incomeTx.forEach((t: any) => {
-      const key = format(new Date(t.date), "yyyy-MM");
-      if (map.has(key)) map.get(key)!.income += t.amount;
+    incomeTx.forEach((tx: any) => {
+      const key = format(new Date(tx.date), "yyyy-MM");
+      if (map.has(key)) map.get(key)!.income += toBase(tx.amount, tx.accounts?.currency);
     });
-    expenseTx.forEach((t: any) => {
-      const key = format(new Date(t.date), "yyyy-MM");
-      if (map.has(key)) map.get(key)!.expense += t.amount;
+    expenseTx.forEach((tx: any) => {
+      const key = format(new Date(tx.date), "yyyy-MM");
+      if (map.has(key)) map.get(key)!.expense += toBase(tx.amount, tx.accounts?.currency);
     });
     return Array.from(map, ([key, val]) => ({
       month: key,
@@ -364,7 +779,7 @@ export default function SavingsPage() {
       expense: val.expense,
       savingsPct: val.income > 0 ? ((val.income - val.expense) / val.income) * 100 : 0,
     }));
-  }, [incomeTx, expenseTx]);
+  }, [incomeTx, expenseTx, baseCurrency, exchangeRates]);
 
   const chartData = useMemo(() => {
     const now = new Date();
@@ -372,8 +787,8 @@ export default function SavingsPage() {
       return Array.from({ length: 30 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (29 - i));
         const key = format(d, "yyyy-MM-dd");
-        const dayIncome = incomeTx.filter((t: any) => format(new Date(t.date), "yyyy-MM-dd") === key).reduce((s: number, t: any) => s + t.amount, 0);
-        const dayExpense = expenseTx.filter((t: any) => format(new Date(t.date), "yyyy-MM-dd") === key).reduce((s: number, t: any) => s + t.amount, 0);
+        const dayIncome = incomeTx.filter((tx: any) => format(new Date(tx.date), "yyyy-MM-dd") === key).reduce((s: number, tx: any) => s + toBase(tx.amount, tx.accounts?.currency), 0);
+        const dayExpense = expenseTx.filter((tx: any) => format(new Date(tx.date), "yyyy-MM-dd") === key).reduce((s: number, tx: any) => s + toBase(tx.amount, tx.accounts?.currency), 0);
         return { name: format(d, "MMM d"), savings: dayIncome - dayExpense };
       });
     }
@@ -381,21 +796,21 @@ export default function SavingsPage() {
       return Array.from({ length: 12 }, (_, i) => {
         const d = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (11 - i) * 7);
         const end = new Date(d.getTime() + 6 * 86400000);
-        const weekIncome = incomeTx.filter((t: any) => { const td = new Date(t.date); return td >= d && td <= end; }).reduce((s: number, t: any) => s + t.amount, 0);
-        const weekExpense = expenseTx.filter((t: any) => { const td = new Date(t.date); return td >= d && td <= end; }).reduce((s: number, t: any) => s + t.amount, 0);
+        const weekIncome = incomeTx.filter((tx: any) => { const td = new Date(tx.date); return td >= d && td <= end; }).reduce((s: number, tx: any) => s + toBase(tx.amount, tx.accounts?.currency), 0);
+        const weekExpense = expenseTx.filter((tx: any) => { const td = new Date(tx.date); return td >= d && td <= end; }).reduce((s: number, tx: any) => s + toBase(tx.amount, tx.accounts?.currency), 0);
         return { name: format(d, "MMM d"), savings: weekIncome - weekExpense };
       });
     }
     if (chartTimeFilter === "yearly") {
       return Array.from({ length: 5 }, (_, i) => {
         const y = now.getFullYear() - 4 + i;
-        const yearIncome = incomeTx.filter((t: any) => new Date(t.date).getFullYear() === y).reduce((s: number, t: any) => s + t.amount, 0);
-        const yearExpense = expenseTx.filter((t: any) => new Date(t.date).getFullYear() === y).reduce((s: number, t: any) => s + t.amount, 0);
+        const yearIncome = incomeTx.filter((tx: any) => new Date(tx.date).getFullYear() === y).reduce((s: number, tx: any) => s + toBase(tx.amount, tx.accounts?.currency), 0);
+        const yearExpense = expenseTx.filter((tx: any) => new Date(tx.date).getFullYear() === y).reduce((s: number, tx: any) => s + toBase(tx.amount, tx.accounts?.currency), 0);
         return { name: String(y), savings: yearIncome - yearExpense };
       });
     }
     return monthlySavingsData.map((d) => ({ name: d.label, savings: d.savings }));
-  }, [incomeTx, expenseTx, chartTimeFilter, monthlySavingsData]);
+  }, [incomeTx, expenseTx, chartTimeFilter, monthlySavingsData, baseCurrency, exchangeRates]);
 
   const currentMonthData = monthlySavingsData.find(
     (d) => d.month === format(new Date(), "yyyy-MM"),
@@ -419,11 +834,11 @@ export default function SavingsPage() {
           className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4"
         >
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Savings</h1>
-            <p className="text-muted-foreground mt-1">Track your savings goals and progress</p>
+            <h1 className="text-3xl font-bold tracking-tight">{t("savings.title")}</h1>
+            <p className="text-muted-foreground mt-1">{t("savings.description")}</p>
           </div>
           <Button onClick={openCreate} className="gap-2">
-            <Plus className="h-4 w-4" /> Add Goal
+            <Plus className="h-4 w-4" /> {t("savings.addGoal")}
           </Button>
         </motion.div>
 
@@ -439,19 +854,19 @@ export default function SavingsPage() {
                 <div className="space-y-1">
                   <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <TrendingUp className="h-4 w-4" />
-                    <span>Annual Savings Estimate</span>
+                    <span>{t("savings.annualEstimate")}</span>
                   </div>
                   <p className="text-3xl font-bold tracking-tight">
-                    {annualEstimate >= 0 ? "+" : ""}{formatCurrency(annualEstimate)}
+                    {annualEstimate >= 0 ? "+" : ""}{formatCurrency(annualEstimate, baseCurrency)}
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Based on your {format(new Date(), "MMMM")} savings of{" "}
-                    {currentMonthData ? formatCurrency(currentMonthData.savings) : "$0"}
+                    {currentMonthData ? formatCurrency(currentMonthData.savings, baseCurrency) : formatCurrency(0, baseCurrency)}
                   </p>
                 </div>
                 <div className="hidden sm:flex items-center gap-2 text-emerald-500 bg-emerald-500/10 px-3 py-1.5 rounded-full text-sm font-medium">
                   <TrendingUp className="h-4 w-4" />
-                  {annualEstimate > 0 ? "On track" : "Needs attention"}
+                  {annualEstimate > 0 ? t("savings.onTrack") : t("savings.needsAttention")}
                 </div>
               </div>
             </CardContent>
@@ -468,7 +883,7 @@ export default function SavingsPage() {
             <CardHeader className="pb-2 flex flex-row items-center justify-between">
               <CardTitle className="text-sm font-medium flex items-center gap-2">
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                Savings Over Time
+                {t("savings.savingsOverTime")}
               </CardTitle>
               <Tabs value={chartTimeFilter} onValueChange={setChartTimeFilter}>
                 <TabsList className="h-8">
@@ -502,17 +917,20 @@ export default function SavingsPage() {
                       tick={{ fontSize: 11, fill: "hsl(var(--muted-foreground))" }}
                       axisLine={false}
                       tickLine={false}
-                      tickFormatter={(v: number) => `$${v}`}
+                      tickFormatter={(v: number) => `${baseCurrencySymbol}${v}`}
                     />
                     <Tooltip
-                      formatter={(v) => [formatCurrency(Number(v)), "Savings"]}
+                      formatter={(v) => [formatCurrency(Number(v), baseCurrency), t("savings.savingsGoals")]}
                       contentStyle={{
                         background: "hsl(var(--card))",
                         border: "1px solid hsl(var(--border))",
                         borderRadius: 8,
                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        color: "hsl(var(--foreground))",
                       }}
-                      cursor={{ fill: "hsl(var(--primary)/0.08)" }}
+                      itemStyle={{ color: "hsl(var(--foreground))" }}
+                      labelStyle={{ color: "hsl(var(--muted-foreground))" }}
+                      cursor={{ fill: "rgba(99, 102, 241, 0.12)" }}
                     />
                     <Bar
                       dataKey="savings"
@@ -530,9 +948,9 @@ export default function SavingsPage() {
         {/* Savings Goals Grid */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h2 className="text-lg font-semibold">Savings Goals</h2>
+            <h2 className="text-lg font-semibold">{t("savings.savingsGoals")}</h2>
             <Badge variant="secondary" className="font-normal">
-              {goals.length} {goals.length === 1 ? "goal" : "goals"}
+              {t("savings.goalCount", { count: goals.length })}
             </Badge>
           </div>
 
@@ -566,13 +984,13 @@ export default function SavingsPage() {
                       <PiggyBank className="h-8 w-8 text-primary" />
                     </div>
                     <div>
-                      <h3 className="text-lg font-semibold">No savings goals yet</h3>
+                      <h3 className="text-lg font-semibold">{t("savings.noGoals")}</h3>
                       <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                        Start building your financial future by setting your first savings goal. Whether it's an emergency fund, a vacation, or a big purchase — every goal starts with a single step.
+                        {t("savings.noGoalsDesc")}
                       </p>
                     </div>
                     <Button onClick={openCreate} className="gap-2 mt-2">
-                      <Plus className="h-4 w-4" /> Set Your First Goal
+                      <Plus className="h-4 w-4" /> {t("savings.setFirstGoal")}
                     </Button>
                   </div>
                 </CardContent>
@@ -594,6 +1012,9 @@ export default function SavingsPage() {
                     setFormOpen(true);
                   }}
                   onDelete={setDeleteItem}
+                  onDeposit={(g) => setTransferDialog({ open: true, goal: g, type: "deposit" })}
+                  onWithdraw={(g) => setTransferDialog({ open: true, goal: g, type: "withdrawal" })}
+                  onViewHistory={(g) => setHistoryDialog({ open: true, goal: g })}
                 />
               ))}
             </motion.div>
@@ -610,25 +1031,25 @@ export default function SavingsPage() {
         >
           <Card className="border-border/50 bg-card/50 backdrop-blur">
             <CardHeader className="pb-3">
-              <CardTitle className="text-sm font-medium">Monthly Savings Breakdown</CardTitle>
+              <CardTitle className="text-sm font-medium">{t("savings.monthlyBreakdown")}</CardTitle>
             </CardHeader>
             <CardContent className="p-0">
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border/50 text-muted-foreground">
-                      <th className="p-3 text-left font-medium">Month</th>
-                      <th className="p-3 text-left font-medium">Savings Goal</th>
+                      <th className="p-3 text-left font-medium">{t("common.date")}</th>
+                      <th className="p-3 text-left font-medium">{t("savings.form.targetAmount")}</th>
                       <th className="p-3 text-left font-medium">Actual Savings</th>
-                      <th className="p-3 text-left font-medium">Savings Rate</th>
-                      <th className="p-3 text-left font-medium">Annual Estimate</th>
+                      <th className="p-3 text-left font-medium">{t("savings.savingsRate")}</th>
+                      <th className="p-3 text-left font-medium">{t("savings.annualEstimateCol")}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {monthlySavingsData.length === 0 ? (
                       <tr>
                         <td colSpan={5} className="p-8 text-center text-muted-foreground text-sm">
-                          No transaction data available yet.
+                          {t("savings.noTransactionData")}
                         </td>
                       </tr>
                     ) : (
@@ -648,14 +1069,14 @@ export default function SavingsPage() {
                                 <span className="font-medium">{row.label}</span>
                                 {current && (
                                   <Badge variant="default" className="h-5 text-[10px] px-1.5 bg-primary/10 text-primary border-primary/20">
-                                    Current
+                                    {t("savings.current")}
                                   </Badge>
                                 )}
                               </div>
                             </td>
                             <td className="p-3">
                               {goals.length > 0 ? (
-                                <span className="tabular-nums">{formatCurrency(goals[0]?.target_amount || 0)}</span>
+                                <span className="tabular-nums">{formatCurrency(toBase(goals[0]?.target_amount || 0, goals[0]?.currency), baseCurrency)}</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
@@ -664,7 +1085,7 @@ export default function SavingsPage() {
                               "p-3 font-medium tabular-nums",
                               row.savings >= 0 ? "text-emerald-500" : "text-rose-500",
                             )}>
-                              {row.savings >= 0 ? "+" : ""}{formatCurrency(row.savings)}
+                              {row.savings >= 0 ? "+" : ""}{formatCurrency(row.savings, baseCurrency)}
                             </td>
                             <td className="p-3">
                               <div className="flex items-center gap-2">
@@ -683,7 +1104,7 @@ export default function SavingsPage() {
                               </div>
                             </td>
                             <td className="p-3 tabular-nums text-muted-foreground">
-                              {row.savings >= 0 ? "+" : ""}{formatCurrency(row.savings * 12)}
+                              {row.savings >= 0 ? "+" : ""}{formatCurrency(row.savings * 12, baseCurrency)}
                             </td>
                           </tr>
                         );
@@ -709,6 +1130,7 @@ export default function SavingsPage() {
                 name: editItem.name,
                 target_amount: editItem.target_amount,
                 current_amount: editItem.current_amount,
+                currency: editItem.currency || "USD",
                 deadline: editItem.deadline?.slice(0, 10),
                 color: editItem.color || PRESET_COLORS[0],
                 icon: editItem.icon || "PiggyBank",
@@ -717,25 +1139,46 @@ export default function SavingsPage() {
         }
       />
 
-      {/* Delete Confirmation */}
+      {/* Deposit/Withdraw Dialog */}
+      <TransferDialog
+        open={transferDialog.open}
+        onOpenChange={(v) => setTransferDialog((prev) => ({ ...prev, open: v }))}
+        goal={transferDialog.goal}
+        type={transferDialog.type}
+        accounts={accounts}
+        onSubmit={handleTransfer}
+        isLoading={createSavingsTxMutation.isPending}
+      />
+
+      {/* Transaction History Dialog */}
+      <TransactionHistoryDialog
+        open={historyDialog.open}
+        onOpenChange={(v) => setHistoryDialog((prev) => ({ ...prev, open: v }))}
+        goal={historyDialog.goal}
+        transactions={savingsTransactions}
+        onDelete={handleDeleteSavingsTx}
+        isDeleting={deleteSavingsTxMutation.isPending}
+      />
+
+      {/* Delete Goal Confirmation */}
       <Dialog open={!!deleteItem} onOpenChange={(v) => { if (!v) setDeleteItem(null); }}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle>Delete Goal</DialogTitle>
+            <DialogTitle>{t("savings.deleteGoal")}</DialogTitle>
           </DialogHeader>
           <p className="text-muted-foreground text-sm">
-            Are you sure you want to delete "<span className="text-foreground font-medium">{deleteItem?.name}</span>"? This action cannot be undone.
+            {t("savings.deleteConfirm", { name: deleteItem?.name })}
           </p>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setDeleteItem(null)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
               onClick={handleDelete}
               disabled={deleteMutation.isPending}
             >
-              {deleteMutation.isPending ? "Deleting..." : "Delete"}
+              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

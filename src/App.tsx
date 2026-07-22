@@ -16,6 +16,8 @@ const DashboardPage = lazy(() => import("@/pages/dashboard"));
 const TransactionsPage = lazy(() => import("@/pages/transactions"));
 const SavingsPage = lazy(() => import("@/pages/savings"));
 const AiReportPage = lazy(() => import("@/pages/ai-report"));
+const AccountsPage = lazy(() => import("@/pages/accounts"));
+const TransfersPage = lazy(() => import("@/pages/transfers"));
 const SettingsPage = lazy(() => import("@/pages/settings"));
 
 function PageLoader() {
@@ -134,6 +136,22 @@ export function App() {
                   element={
                     <ProtectedRoute>
                       <AiReportPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/accounts"
+                  element={
+                    <ProtectedRoute>
+                      <AccountsPage />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/transfers"
+                  element={
+                    <ProtectedRoute>
+                      <TransfersPage />
                     </ProtectedRoute>
                   }
                 />

@@ -27,6 +27,7 @@ export const CURRENCIES = [
   { code: "AUD", symbol: "A$", name: "Australian Dollar" },
   { code: "CHF", symbol: "CHF", name: "Swiss Franc" },
   { code: "BRL", symbol: "R$", name: "Brazilian Real" },
+  { code: "PEN", symbol: "S/", name: "Peruvian Sol" },
   { code: "MXN", symbol: "MX$", name: "Mexican Peso" },
   { code: "INR", symbol: "₹", name: "Indian Rupee" },
 ];
@@ -43,7 +44,6 @@ export const LANGUAGES = [
 export const TRANSACTION_TYPES = [
   { value: "income", label: "Income", color: "#22c55e" },
   { value: "expense", label: "Expense", color: "#ef4444" },
-  { value: "transfer", label: "Transfer", color: "#6366f1" },
 ] as const;
 
 export const CHART_COLORS = [

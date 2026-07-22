@@ -5,6 +5,7 @@ import { z } from "zod";
 import { motion } from "framer-motion";
 import { Mail, Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import { useAuth } from "@/hooks/use-auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ const GoogleIcon = () => (
 );
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [showPassword, setShowPassword] = useState(false);
   const { signIn, loading } = useAuth();
   const navigate = useNavigate();
@@ -96,10 +98,10 @@ export default function LoginPage() {
         <Card className="border-gray-200 shadow-lg">
           <CardHeader className="space-y-1 pb-4">
             <CardTitle className="text-xl font-semibold">
-              Welcome back
+              {t("auth.login.title")}
             </CardTitle>
             <CardDescription>
-              Sign in to your account to continue
+              {t("auth.login.subtitle")}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -119,7 +121,7 @@ export default function LoginPage() {
               disabled={loading}
             >
               <GoogleIcon />
-              <span className="ml-2">Sign in with Google</span>
+              <span className="ml-2">{t("auth.login.signInGoogle")}</span>
             </Button>
 
             <div className="relative">
@@ -127,13 +129,13 @@ export default function LoginPage() {
                 <Separator className="w-full" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-500">or</span>
+                <span className="bg-white px-2 text-gray-500">{t("common.or")}</span>
               </div>
             </div>
 
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t("auth.login.emailLabel")}</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
                   <Input
@@ -156,12 +158,12 @@ export default function LoginPage() {
 
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password">{t("auth.login.passwordLabel")}</Label>
                   <Link
                     to="/forgot-password"
                     className="text-xs font-medium text-gray-500 hover:text-gray-900"
                   >
-                    Forgot password?
+                    {t("auth.login.forgotPassword")}
                   </Link>
                 </div>
                 <div className="relative">
@@ -169,7 +171,7 @@ export default function LoginPage() {
                   <Input
                     id="password"
                     type={showPassword ? "text" : "password"}
-                    placeholder="Enter your password"
+                    placeholder={t("auth.login.passwordPlaceholder")}
                     className={cn(
                       "pl-10 pr-10",
                       errors.password &&
@@ -206,7 +208,7 @@ export default function LoginPage() {
                   htmlFor="remember"
                   className="text-sm text-gray-600"
                 >
-                  Remember me
+                  {t("auth.login.rememberMe")}
                 </label>
               </div>
 
@@ -218,17 +220,17 @@ export default function LoginPage() {
                 {loading ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : null}
-                Sign In
+                {t("auth.login.signIn")}
               </Button>
             </form>
 
             <p className="text-center text-sm text-gray-600">
-              Don't have an account?{" "}
+              {t("auth.login.noAccount")}{" "}
               <Link
                 to="/signup"
                 className="font-medium text-gray-900 hover:underline"
               >
-                Sign up
+                {t("auth.login.signUp")}
               </Link>
             </p>
           </CardContent>

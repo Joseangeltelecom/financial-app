@@ -21,6 +21,8 @@ import { useTheme } from "@/hooks/use-theme";
 import { cn } from "@/lib/utils";
 import { CURRENCIES, LANGUAGES } from "@/config/constants";
 import { toast } from "sonner";
+import { useTranslation } from "react-i18next";
+import { useLanguage } from "@/hooks/use-language";
 
 const animate = (i: number) => ({
   initial: { opacity: 0, y: 16 },
@@ -63,11 +65,13 @@ function SkeletonSettings() {
 }
 
 export default function SettingsPage() {
+  const { t } = useTranslation();
   const { user } = useAuth();
   const { data: profile, isLoading: profileLoading } = useProfile();
   const updateProfile = useUpdateProfile();
   const { isLoading: notifLoading } = useNotificationSettings();
   const { theme, setTheme } = useTheme();
+  const { language, changeLanguage } = useLanguage();
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [dailyReminder, setDailyReminder] = useState(true);
   const [reminderTime, setReminderTime] = useState("09:00");
@@ -82,7 +86,11 @@ export default function SettingsPage() {
 
   const budgetForm = useForm<BudgetForm>({
     resolver: zodResolver(budgetSchema),
-    defaultValues: { monthly_budget: 0, initial_balance: 0, savings_goal: 0 },
+    values: {
+      monthly_budget: profile?.monthly_budget ?? 0,
+      initial_balance: profile?.initial_balance ?? 0,
+      savings_goal: profile?.savings_goal ?? 0,
+    },
   });
 
   if (profileLoading || notifLoading) return <div className="p-6"><SkeletonSettings /></div>;
@@ -93,8 +101,8 @@ export default function SettingsPage() {
       <motion.div {...animate(0)}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> Profile</CardTitle>
-            <CardDescription>Manage your personal information</CardDescription>
+            <CardTitle className="flex items-center gap-2"><User className="h-5 w-5" /> {t("settings.profile.title")}</CardTitle>
+            <CardDescription>{t("settings.profile.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center gap-4">
@@ -107,7 +115,7 @@ export default function SettingsPage() {
                 </button>
               </div>
               <div className="flex-1 space-y-1">
-                <Label htmlFor="full_name">Full Name</Label>
+                <Label htmlFor="full_name">{t("settings.profile.fullName")}</Label>
                 <Input id="full_name" {...profileForm.register("full_name")} />
                 {profileForm.formState.errors.full_name && (
                   <p className="text-xs text-destructive">{profileForm.formState.errors.full_name.message}</p>
@@ -115,14 +123,14 @@ export default function SettingsPage() {
               </div>
             </div>
             <div className="space-y-1">
-              <Label>Email</Label>
+              <Label>{t("settings.profile.email")}</Label>
               <Input value={user?.email ?? ""} disabled className="opacity-60" />
             </div>
             <Button onClick={profileForm.handleSubmit((data) => {
-              updateProfile.mutate(data, { onSuccess: () => toast.success("Profile updated"), onError: () => toast.error("Failed to update profile") });
+              updateProfile.mutate(data, { onSuccess: () => toast.success(t("settings.profileUpdated")), onError: () => toast.error(t("settings.profileError")) });
             })} disabled={updateProfile.isPending}>
               {updateProfile.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Save Changes
+              {t("settings.profile.saveChanges")}
             </Button>
           </CardContent>
         </Card>
@@ -132,19 +140,19 @@ export default function SettingsPage() {
       <motion.div {...animate(1)}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5" /> Appearance</CardTitle>
-            <CardDescription>Choose your preferred theme</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Palette className="h-5 w-5" /> {t("settings.appearance.title")}</CardTitle>
+            <CardDescription>{t("settings.appearance.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-3 gap-3">
-              {THEMES.map((t) => (
-                <button key={t.value} type="button" onClick={() => setTheme(t.value)}
+              {THEMES.map((themeItem) => (
+                <button key={themeItem.value} type="button" onClick={() => setTheme(themeItem.value)}
                   className={cn("flex flex-col items-center gap-2 rounded-xl border-2 p-4 transition-all hover:border-primary/50",
-                    theme === t.value ? "border-primary bg-primary/5" : "border-border")}>
-                  <div className={cn("flex h-12 w-12 items-center justify-center rounded-lg", t.bg)}>
-                    <t.icon className="h-6 w-6" />
+                    theme === themeItem.value ? "border-primary bg-primary/5" : "border-border")}>
+                  <div className={cn("flex h-12 w-12 items-center justify-center rounded-lg", themeItem.bg)}>
+                    <themeItem.icon className="h-6 w-6" />
                   </div>
-                  <span className="text-sm font-medium">{t.label}</span>
+                  <span className="text-sm font-medium">{themeItem.value === "light" ? t("settings.appearance.light") : themeItem.value === "dark" ? t("settings.appearance.dark") : t("settings.appearance.system")}</span>
                 </button>
               ))}
             </div>
@@ -156,12 +164,12 @@ export default function SettingsPage() {
       <motion.div {...animate(2)}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> Currency & Language</CardTitle>
-            <CardDescription>Set your preferred currency and language</CardDescription>
+            <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> {t("settings.currencyLanguage.title")}</CardTitle>
+            <CardDescription>{t("settings.currencyLanguage.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label>Currency</Label>
+              <Label>{t("settings.currencyLanguage.currency")}</Label>
               <Select defaultValue={profile?.currency ?? "USD"}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
@@ -170,11 +178,19 @@ export default function SettingsPage() {
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Language</Label>
-              <Select defaultValue="en">
+              <Label>{t("settings.currencyLanguage.language")}</Label>
+              <Select
+                value={language}
+                onValueChange={(val) => {
+                  changeLanguage(val);
+                  updateProfile.mutate({ language: val });
+                }}
+              >
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  {LANGUAGES.map((l) => <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>)}
+                  {LANGUAGES.filter((l) => ["en", "es"].includes(l.code)).map((l) => (
+                    <SelectItem key={l.code} value={l.code}>{l.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -186,22 +202,50 @@ export default function SettingsPage() {
       <motion.div {...animate(3)}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> Budget Settings</CardTitle>
-            <CardDescription>Configure your budget limits and goals</CardDescription>
+            <CardTitle className="flex items-center gap-2"><DollarSign className="h-5 w-5" /> {t("settings.budget.title")}</CardTitle>
+            <CardDescription>{t("settings.budget.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {BUDGET_FIELDS.map((f) => (
-              <div key={f.name} className="space-y-1">
-                <Label>{f.label}</Label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
-                  <Input type="number" className="pl-7" {...budgetForm.register(f.name)} />
-                </div>
-                <p className="text-xs text-muted-foreground">{f.desc}</p>
+            <div className="space-y-1">
+              <Label>{t("settings.budget.monthlyBudget")}</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input type="number" className="pl-7" {...budgetForm.register("monthly_budget", { valueAsNumber: true })} />
               </div>
-            ))}
-            <Button onClick={budgetForm.handleSubmit(() => toast.success("Budget settings saved"))}>
-              <Save className="mr-2 h-4 w-4" /> Save Budget
+              <p className="text-xs text-muted-foreground">{t("settings.budget.monthlyBudgetDesc")}</p>
+            </div>
+            <div className="space-y-1">
+              <Label>{t("settings.budget.initialBalance")}</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input type="number" className="pl-7" {...budgetForm.register("initial_balance", { valueAsNumber: true })} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("settings.budget.initialBalanceDesc")}</p>
+            </div>
+            <div className="space-y-1">
+              <Label>{t("settings.budget.savingsGoal")}</Label>
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-muted-foreground">$</span>
+                <Input type="number" className="pl-7" {...budgetForm.register("savings_goal", { valueAsNumber: true })} />
+              </div>
+              <p className="text-xs text-muted-foreground">{t("settings.budget.savingsGoalDesc")}</p>
+            </div>
+            <Button
+              onClick={budgetForm.handleSubmit((data) => {
+                updateProfile.mutate(
+                  {
+                    monthly_budget: data.monthly_budget,
+                    initial_balance: data.initial_balance,
+                    savings_goal: data.savings_goal,
+                  },
+                  {
+                    onSuccess: () => toast.success(t("settings.saved")),
+                    onError: () => toast.error(t("settings.profileError")),
+                  }
+                );
+              })}
+            >
+              <Save className="mr-2 h-4 w-4" /> {t("settings.budget.saveBudget")}
             </Button>
           </CardContent>
         </Card>
@@ -211,45 +255,45 @@ export default function SettingsPage() {
       <motion.div {...animate(4)}>
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5" /> Notifications</CardTitle>
-            <CardDescription>Manage reminders and alert thresholds</CardDescription>
+            <CardTitle className="flex items-center gap-2"><Bell className="h-5 w-5" /> {t("settings.notifications.title")}</CardTitle>
+            <CardDescription>{t("settings.notifications.description")}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5">
             <div className="flex items-center justify-between">
-              <div><p className="text-sm font-medium">Daily Reminder</p><p className="text-xs text-muted-foreground">Receive a daily spending summary</p></div>
+              <div><p className="text-sm font-medium">{t("settings.notifications.dailyReminder")}</p><p className="text-xs text-muted-foreground">{t("settings.notifications.dailyReminderDesc")}</p></div>
               <Switch checked={dailyReminder} onCheckedChange={setDailyReminder} />
             </div>
             {dailyReminder && (
               <div className="space-y-1">
-                <Label>Reminder Time</Label>
+                <Label>{t("settings.notifications.reminderTime")}</Label>
                 <Input type="time" value={reminderTime} onChange={(e) => setReminderTime(e.target.value)} className="w-40" />
               </div>
             )}
             <Separator />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Budget Warning Threshold</Label>
+                <Label>{t("settings.notifications.budgetWarning")}</Label>
                 <Badge variant="secondary">{warningThreshold}%</Badge>
               </div>
               <input type="range" min={50} max={100} value={warningThreshold} onChange={(e) => setWarningThreshold(Number(e.target.value))} className="w-full accent-primary" />
-              <p className="text-xs text-muted-foreground">Alert when spending reaches this percentage</p>
+              <p className="text-xs text-muted-foreground">{t("settings.notifications.budgetWarningDesc")}</p>
             </div>
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <Label>Budget Critical Threshold</Label>
+                <Label>{t("settings.notifications.budgetCritical")}</Label>
                 <Badge variant="destructive">{criticalThreshold}%</Badge>
               </div>
               <input type="range" min={80} max={150} value={criticalThreshold} onChange={(e) => setCriticalThreshold(Number(e.target.value))} className="w-full accent-primary" />
-              <p className="text-xs text-muted-foreground">Critical alert when spending exceeds this percentage</p>
+              <p className="text-xs text-muted-foreground">{t("settings.notifications.budgetCriticalDesc")}</p>
             </div>
             <Separator />
             <div className="flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <p className="text-sm font-medium">Push Notifications</p>
-                  <Badge variant="outline" className="text-[10px]">Coming Soon</Badge>
+                  <p className="text-sm font-medium">{t("settings.notifications.pushNotifications")}</p>
+                  <Badge variant="outline" className="text-[10px]">{t("settings.notifications.comingSoon")}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">Receive push notifications on your device</p>
+                <p className="text-xs text-muted-foreground">{t("settings.notifications.pushNotificationsDesc")}</p>
               </div>
               <Switch checked={pushEnabled} onCheckedChange={setPushEnabled} disabled />
             </div>
@@ -261,12 +305,12 @@ export default function SettingsPage() {
       <motion.div {...animate(5)}>
         <Card className="border-destructive/30">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-destructive"><Shield className="h-5 w-5" /> Account</CardTitle>
-            <CardDescription>Manage your account settings</CardDescription>
+            <CardTitle className="flex items-center gap-2 text-destructive"><Shield className="h-5 w-5" /> {t("settings.account.title")}</CardTitle>
+            <CardDescription>{t("settings.account.description")}</CardDescription>
           </CardHeader>
           <CardContent>
             <Button variant="destructive" onClick={() => setDeleteOpen(true)}>
-              <Trash2 className="mr-2 h-4 w-4" /> Delete Account
+              <Trash2 className="mr-2 h-4 w-4" /> {t("settings.account.deleteAccount")}
             </Button>
           </CardContent>
         </Card>
@@ -275,8 +319,8 @@ export default function SettingsPage() {
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Delete Account</DialogTitle>
-            <DialogDescription>This action is irreversible. All your data including transactions, budgets, and settings will be permanently deleted.</DialogDescription>
+            <DialogTitle>{t("settings.account.deleteConfirmTitle")}</DialogTitle>
+            <DialogDescription>{t("settings.account.deleteConfirmDesc")}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteOpen(false)}>Cancel</Button>
