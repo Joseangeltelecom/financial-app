@@ -71,6 +71,14 @@ export function AppLayout({ children }: { children: ReactNode }) {
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
               transition={{ duration: 0.25, ease: "easeInOut" }}
+              drag="x"
+              dragConstraints={{ left: -260, right: 0 }}
+              dragElastic={0.1}
+              onDragEnd={(_, info) => {
+                if (info.offset.x < -80 || info.velocity.x < -300) {
+                  closeMobile();
+                }
+              }}
               className="fixed inset-y-0 left-0 z-50 w-[260px]"
             >
               <Sidebar
