@@ -324,7 +324,7 @@ export default function DashboardPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15, duration: 0.4 }}>
           <Card className="hover:shadow-md transition-shadow duration-200 h-full">
             <CardContent className="p-5">
-              <div className={cn("flex items-center justify-center w-10 h-10 rounded-xl", remainingBg)}>
+              <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-orange-500">
                 <Target className="w-5 h-5 text-white" />
               </div>
               <div className="mt-3">
@@ -347,7 +347,7 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
         </motion.div>
-        <StatCard icon={Receipt} label={t("dashboard.currentExpenses")} value={formatCurrency(monthlyExpenses, baseCurrency)} color={remainingBg} delay={0.25} />
+        <StatCard icon={Receipt} label={t("dashboard.currentExpenses")} value={formatCurrency(monthlyExpenses, baseCurrency)} color="bg-red-500" delay={0.25} />
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3, duration: 0.4 }}>
           <Card className="hover:shadow-md transition-shadow duration-200 h-full">
             <CardContent className="p-5">
