@@ -64,7 +64,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
               onClick={closeMobile}
-              className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
+              className="fixed inset-0 z-40 bg-black/50"
             />
             <motion.aside
               initial={{ x: "-100%" }}
