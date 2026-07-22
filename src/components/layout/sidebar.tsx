@@ -364,7 +364,7 @@ export function Sidebar({ collapsed, onToggle, onMobileClose, isMobile }: Sideba
   );
 
   if (isMobile) {
-    return null;
+    return content;
   }
 
   return (
