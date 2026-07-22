@@ -221,6 +221,7 @@
     "depositError": "Error al procesar el depósito",
     "withdrawError": "Error al procesar el retiro",
     "currencyMismatch": "La cuenta está en {{from}} pero la meta está en {{to}}. El monto se tratará como {{to}}.",
+    "noAccountsWithCurrency": "No hay cuentas con moneda {{currency}}. Crea una cuenta en {{currency}} primero.",
     "transactionHistory": "Historial de Transacciones",
     "noTransactions": "Aún no hay transacciones para esta meta",
     "noTransactionsDesc": "Realiza tu primer depósito para comenzar a ahorrar hacia esta meta",

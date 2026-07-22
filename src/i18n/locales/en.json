@@ -221,6 +221,7 @@
     "depositError": "Failed to process deposit",
     "withdrawError": "Failed to process withdrawal",
     "currencyMismatch": "Account is in {{from}} but goal is in {{to}}. The amount will be treated as {{to}}.",
+    "noAccountsWithCurrency": "No accounts with {{currency}} currency. Create an account in {{currency}} first.",
     "transactionHistory": "Transaction History",
     "noTransactions": "No transactions yet for this goal",
     "noTransactionsDesc": "Make your first deposit to start saving towards this goal",

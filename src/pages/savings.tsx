@@ -438,7 +438,7 @@ function TransferDialog({
                 <SelectValue placeholder={t("savings.selectAccount")} />
               </SelectTrigger>
               <SelectContent>
-                {accounts.filter((a) => a.is_active).map((account) => (
+                {accounts.filter((a) => a.is_active && a.currency === goalCurrency).map((account) => (
                   <SelectItem key={account.id} value={account.id}>
                     <div className="flex items-center gap-2">
                       <span>{account.name}</span>
@@ -451,8 +451,13 @@ function TransferDialog({
               </SelectContent>
             </Select>
             {errors.account_id && <p className="text-xs text-rose-500">{errors.account_id.message}</p>}
-            {selectedAccount && selectedAccount.currency !== goalCurrency && (
+            {accounts.filter((a) => a.is_active && a.currency === goalCurrency).length === 0 && (
               <p className="text-xs text-amber-500">
+                {t("savings.noAccountsWithCurrency", { currency: goalCurrency })}
+              </p>
+            )}
+            {selectedAccount && selectedAccount.currency !== goalCurrency && (
+              <p className="text-xs text-rose-500">
                 {t("savings.currencyMismatch", { from: selectedAccount.currency, to: goalCurrency })}
               </p>
             )}
@@ -486,7 +491,7 @@ function TransferDialog({
             <Button type="button" variant="ghost" onClick={() => handleClose(false)}>
               {t("common.cancel")}
             </Button>
-            <Button type="submit" disabled={isLoading}>
+            <Button type="submit" disabled={isLoading || (selectedAccount != null && selectedAccount.currency !== goalCurrency)}>
               {isLoading ? t("common.saving") : isDeposit ? t("savings.confirmDeposit") : t("savings.confirmWithdraw")}
             </Button>
           </DialogFooter>
